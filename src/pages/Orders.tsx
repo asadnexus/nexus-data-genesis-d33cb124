@@ -881,6 +881,12 @@ export default function Orders() {
                     <span className="font-mono">{viewOrder.tracking_code}</span>
                   </>
                 )}
+                {viewOrder.courier_id && (
+                  <>
+                    <span className="text-muted-foreground">Courier</span>
+                    <span>{couriers.find(c => c.id === viewOrder.courier_id)?.name || "—"}</span>
+                  </>
+                )}
               </div>
 
               <Separator />
