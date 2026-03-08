@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Package, Users, UserCog, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
+import { Package, Users, UserCog, LayoutDashboard, LogOut, Menu, X, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["main_admin", "sub_admin", "moderator"] },
   { to: "/products", label: "Products", icon: Package, roles: ["main_admin", "sub_admin", "moderator"] },
   { to: "/customers", label: "Customers", icon: Users, roles: ["main_admin", "sub_admin", "moderator"] },
+  { to: "/orders", label: "Orders", icon: ShoppingCart, roles: ["main_admin", "sub_admin", "moderator"] },
   { to: "/users", label: "Users", icon: UserCog, roles: ["main_admin"] },
 ];
 

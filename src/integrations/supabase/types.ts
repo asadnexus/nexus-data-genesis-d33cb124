@@ -47,6 +47,125 @@ export type Database = {
         }
         Relationships: []
       }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          product_code: string
+          product_id: string | null
+          product_name: string
+          quantity: number
+          subtotal: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          product_code: string
+          product_id?: string | null
+          product_name: string
+          quantity: number
+          subtotal: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          product_code?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          subtotal?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          advance: number | null
+          cod: number | null
+          created_at: string
+          created_by: string
+          customer_address: string | null
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string
+          deleted_at: string | null
+          id: string
+          invoice_code: string
+          invoice_url: string | null
+          note: string | null
+          order_value: number
+          status: string | null
+          total_due: number
+          tracking_code: string | null
+        }
+        Insert: {
+          advance?: number | null
+          cod?: number | null
+          created_at?: string
+          created_by: string
+          customer_address?: string | null
+          customer_id?: string | null
+          customer_name: string
+          customer_phone: string
+          deleted_at?: string | null
+          id?: string
+          invoice_code: string
+          invoice_url?: string | null
+          note?: string | null
+          order_value?: number
+          status?: string | null
+          total_due?: number
+          tracking_code?: string | null
+        }
+        Update: {
+          advance?: number | null
+          cod?: number | null
+          created_at?: string
+          created_by?: string
+          customer_address?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string
+          deleted_at?: string | null
+          id?: string
+          invoice_code?: string
+          invoice_url?: string | null
+          note?: string | null
+          order_value?: number
+          status?: string | null
+          total_due?: number
+          tracking_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           code: string
@@ -145,6 +264,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_order_with_items: {
+        Args: {
+          p_advance: number
+          p_cod: number
+          p_created_by: string
+          p_customer_address: string
+          p_customer_id: string
+          p_customer_name: string
+          p_customer_phone: string
+          p_invoice_code: string
+          p_items: Json
+          p_note: string
+        }
+        Returns: string
+      }
+      generate_invoice_code: { Args: { p_created_by: string }; Returns: string }
       generate_product_code: { Args: never; Returns: string }
       generate_user_code: {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
