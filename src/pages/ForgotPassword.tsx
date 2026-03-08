@@ -18,14 +18,18 @@ export default function ForgotPassword() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    const normalizedEmail = email.trim().toLowerCase();
+    const redirectUrl = `${window.location.origin}/reset-password`;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: redirectUrl,
     });
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       setSent(true);
+      toast({ title: "Email sent", description: `Password reset link sent to ${normalizedEmail}. Check your inbox and spam folder.` });
     }
     setLoading(false);
   };
