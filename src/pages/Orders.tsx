@@ -776,6 +776,20 @@ export default function Orders() {
                     className="bg-background/50 border-border"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Courier</Label>
+                  <Select value={editCourier} onValueChange={setEditCourier}>
+                    <SelectTrigger className="bg-background/50 border-border">
+                      <SelectValue placeholder="Select courier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No courier</SelectItem>
+                      {couriers.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <Separator />
