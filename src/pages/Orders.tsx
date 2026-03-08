@@ -226,12 +226,24 @@ export default function Orders() {
     setEditOpen(true);
   };
 
-  const filtered = orders.filter(
-    (o) =>
-      o.invoice_code.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer_name.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer_phone.includes(search)
-  );
+  const filtered = useMemo(() => {
+    const result = orders.filter(
+      (o) =>
+        o.invoice_code.toLowerCase().includes(search.toLowerCase()) ||
+        o.customer_name.toLowerCase().includes(search.toLowerCase()) ||
+        o.customer_phone.includes(search)
+    );
+    result.sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "invoice") {
+        cmp = a.invoice_code.localeCompare(b.invoice_code);
+      } else {
+        cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }
+      return sortDirection === "asc" ? cmp : -cmp;
+    });
+    return result;
+  }, [orders, search, sortBy, sortDirection]);
 
   const addItem = () => setItems([...items, { product_id: "", quantity: 1 }]);
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
