@@ -219,6 +219,7 @@ export default function Orders() {
     setEditNote(order.note || "");
     setEditStatus(order.status || "Pending");
     setEditTrackingCode(order.tracking_code || "");
+    setEditCourier(order.courier_id || "");
     setEditOpen(true);
   };
 
