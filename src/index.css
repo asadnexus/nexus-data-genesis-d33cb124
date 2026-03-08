@@ -9,11 +9,11 @@
     --background: 235 25% 12%;
     --foreground: 0 0% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 235 25% 12%;
+    --card: 235 25% 15%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 235 25% 12%;
+    --popover: 235 25% 15%;
+    --popover-foreground: 0 0% 95%;
 
     --primary: 235 25% 18%;
     --primary-foreground: 0 0% 98%;
@@ -55,10 +55,10 @@
   .dark {
     --background: 235 25% 12%;
     --foreground: 0 0% 95%;
-    --card: 0 0% 100%;
-    --card-foreground: 235 25% 12%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 235 25% 12%;
+    --card: 235 25% 15%;
+    --card-foreground: 0 0% 95%;
+    --popover: 235 25% 15%;
+    --popover-foreground: 0 0% 95%;
     --primary: 235 25% 18%;
     --primary-foreground: 0 0% 98%;
     --secondary: 220 60% 50%;
