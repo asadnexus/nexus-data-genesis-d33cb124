@@ -22,7 +22,11 @@ export default function VerifyEmail() {
   const handleResend = async () => {
     if (!email) return;
     setLoading(true);
-    const { error } = await supabase.auth.resend({ type: "signup", email });
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/verify-email` },
+    });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {

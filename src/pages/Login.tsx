@@ -20,10 +20,24 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const normalizedEmail = email.trim().toLowerCase();
+    const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
 
     if (error) {
-      toast({ title: "Login failed", description: error.message, variant: "destructive" });
+      if (error.message.toLowerCase().includes("email not confirmed")) {
+        await supabase.auth.resend({
+          type: "signup",
+          email: normalizedEmail,
+          options: { emailRedirectTo: `${window.location.origin}/verify-email` },
+        });
+        toast({
+          title: "Email not confirmed",
+          description: `Please check your email spelling and confirm your inbox. A new verification link was sent to ${normalizedEmail}.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Login failed", description: error.message, variant: "destructive" });
+      }
     } else {
       navigate("/dashboard");
     }

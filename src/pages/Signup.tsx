@@ -88,7 +88,7 @@ export default function Signup() {
     if (error) {
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
     } else {
-      navigate("/verify-email", { state: { email: form.email } });
+      navigate("/verify-email", { state: { email: normalizedEmail } });
     }
     setLoading(false);
   };
