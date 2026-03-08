@@ -125,6 +125,20 @@ export default function Orders() {
     },
   });
 
+  // Fetch active couriers
+  const { data: couriers = [] } = useQuery({
+    queryKey: ["couriers-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("couriers")
+        .select("id, name, is_active")
+        .eq("is_active", true)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Customer phone lookup (create form)
   useEffect(() => {
     if (phone.length < 3) {
