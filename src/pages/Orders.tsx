@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,10 +11,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ShoppingCart, Trash2, Eye, Pencil, RotateCcw } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, Eye, Pencil, RotateCcw, Download, Printer, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { GlassSearchBar } from "@/components/GlassSearchBar";
+import { InvoiceTemplate } from "@/components/InvoiceTemplate";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 
 const ORDER_STATUSES = ["Pending", "Confirmed", "Dispatched", "Delivered", "Cancelled", "Returned"] as const;
 
