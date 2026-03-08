@@ -79,6 +79,7 @@ export default function Orders() {
   const queryClient = useQueryClient();
   const { settings: companySettings } = useCompanySettings();
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const customerReceiptRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [sortBy, setSortBy] = useState("created_at");
