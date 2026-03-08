@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { QRCodeSVG } from "qrcode.react";
 
 interface InvoiceItem {
   product_name: string;
