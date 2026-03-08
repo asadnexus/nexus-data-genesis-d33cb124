@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, RotateCcw, Search, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, RotateCcw, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { GlassSearchBar } from "@/components/GlassSearchBar";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Product = Tables<"products">;
@@ -25,6 +26,8 @@ export default function Products() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState({ name: "", price: "", stock: "", description: "" });
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   const canEdit = role === "main_admin" || role === "sub_admin";
 
@@ -39,11 +42,27 @@ export default function Products() {
     },
   });
 
-  const filtered = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.code.toLowerCase().includes(search.toLowerCase())
-  );
+  const processedProducts = useMemo(() => {
+    const filtered = products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.code.toLowerCase().includes(search.toLowerCase())
+    );
+
+    filtered.sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "stock") {
+        cmp = a.stock - b.stock;
+      } else if (sortBy === "code") {
+        cmp = a.code.localeCompare(b.code);
+      } else {
+        cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }
+      return sortDirection === "asc" ? cmp : -cmp;
+    });
+
+    return filtered;
+  }, [products, search, sortBy, sortDirection]);
 
   const createMutation = useMutation({
     mutationFn: async (values: typeof form) => {
@@ -128,11 +147,8 @@ export default function Products() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return;
-    if (editing) {
-      updateMutation.mutate({ id: editing.id, values: form });
-    } else {
-      createMutation.mutate(form);
-    }
+    if (editing) updateMutation.mutate({ id: editing.id, values: form });
+    else createMutation.mutate(form);
   };
 
   return (
@@ -149,34 +165,37 @@ export default function Products() {
         )}
       </div>
 
+      {/* Glass Search Bar */}
+      <div className="mb-6">
+        <GlassSearchBar
+          placeholder="Search by product name or code..."
+          value={search}
+          onChange={setSearch}
+          sortOptions={[
+            { label: "Date", value: "created_at" },
+            { label: "Stock", value: "stock" },
+            { label: "Code", value: "code" },
+          ]}
+          sortValue={sortBy}
+          sortDirection={sortDirection}
+          onSortChange={setSortBy}
+          onSortDirectionChange={setSortDirection}
+        />
+      </div>
+
       <Card className="glass-card">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative max-w-sm flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or code..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-background/50 border-border text-card-foreground"
-              />
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowDeleted(!showDeleted)}
-              className={showDeleted ? "border-destructive text-destructive" : ""}
-            >
+        <CardContent className="pt-6">
+          <div className="flex justify-end mb-4">
+            <Button variant="outline" size="sm" onClick={() => setShowDeleted(!showDeleted)} className={showDeleted ? "border-destructive text-destructive" : ""}>
               {showDeleted ? "Hide Deleted" : "Show Deleted"}
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
+
           {isLoading ? (
             <div className="flex justify-center py-12">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-secondary border-t-transparent" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : processedProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Package className="mb-4 h-12 w-12" />
               <p>No products found</p>
@@ -195,7 +214,7 @@ export default function Products() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((p) => (
+                  {processedProducts.map((p) => (
                     <TableRow key={p.id} className={p.deleted_at ? "opacity-60" : ""}>
                       <TableCell className="font-mono text-sm">{p.code}</TableCell>
                       <TableCell className="font-medium">{p.name}</TableCell>

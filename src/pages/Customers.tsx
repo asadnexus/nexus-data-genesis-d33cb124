@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, RotateCcw, Search, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, RotateCcw, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { GlassSearchBar } from "@/components/GlassSearchBar";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Customer = Tables<"customers">;
@@ -25,6 +26,7 @@ export default function Customers() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", address: "" });
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   const canEdit = role === "main_admin" || role === "sub_admin";
 
@@ -39,11 +41,30 @@ export default function Customers() {
     },
   });
 
-  const filtered = customers.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      (c.phone && c.phone.includes(search))
-  );
+  // Assign serial numbers based on creation order (oldest=1), then filter/sort
+  const processedCustomers = useMemo(() => {
+    // Sort by created_at ascending to assign serial numbers
+    const sorted = [...customers].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    const withSerial = sorted.map((c, i) => ({ ...c, serial: i + 1 }));
+
+    // Filter by search (phone)
+    const filtered = withSerial.filter(
+      (c) =>
+        (c.phone && c.phone.includes(search)) ||
+        c.name.toLowerCase().includes(search.toLowerCase())
+    );
+
+    // Sort by serial
+    if (sortDirection === "desc") {
+      filtered.sort((a, b) => b.serial - a.serial); // newest (highest serial) first
+    } else {
+      filtered.sort((a, b) => a.serial - b.serial); // oldest first
+    }
+
+    return filtered;
+  }, [customers, search, sortDirection]);
 
   const createMutation = useMutation({
     mutationFn: async (values: typeof form) => {
@@ -129,22 +150,32 @@ export default function Customers() {
         )}
       </div>
 
+      {/* Glass Search Bar */}
+      <div className="mb-6">
+        <GlassSearchBar
+          placeholder="Search by name or phone..."
+          value={search}
+          onChange={setSearch}
+          sortOptions={[
+            { label: "Serial #", value: "serial" },
+          ]}
+          sortValue="serial"
+          sortDirection={sortDirection}
+          onSortDirectionChange={setSortDirection}
+        />
+      </div>
+
       <Card className="glass-card">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative max-w-sm flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search by name or phone..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-background/50 border-border text-card-foreground" />
-            </div>
+        <CardContent className="pt-6">
+          <div className="flex justify-end mb-4">
             <Button variant="outline" size="sm" onClick={() => setShowDeleted(!showDeleted)} className={showDeleted ? "border-destructive text-destructive" : ""}>
               {showDeleted ? "Hide Deleted" : "Show Deleted"}
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
+
           {isLoading ? (
             <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-secondary border-t-transparent" /></div>
-          ) : filtered.length === 0 ? (
+          ) : processedCustomers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Users className="mb-4 h-12 w-12" /><p>No customers found</p>
             </div>
@@ -153,6 +184,7 @@ export default function Customers() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[60px]">#</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Address</TableHead>
@@ -161,8 +193,9 @@ export default function Customers() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((c) => (
+                  {processedCustomers.map((c) => (
                     <TableRow key={c.id} className={c.deleted_at ? "opacity-60" : ""}>
+                      <TableCell className="font-mono text-muted-foreground font-semibold">{c.serial}</TableCell>
                       <TableCell className="font-medium">{c.name}</TableCell>
                       <TableCell>{c.phone || "—"}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{c.address || "—"}</TableCell>

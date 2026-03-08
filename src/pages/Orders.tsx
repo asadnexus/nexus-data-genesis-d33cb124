@@ -6,14 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, ShoppingCart, Trash2, Eye, Pencil, RotateCcw } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, Eye, Pencil, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { GlassSearchBar } from "@/components/GlassSearchBar";
 
 const ORDER_STATUSES = ["Pending", "Confirmed", "Dispatched", "Delivered", "Cancelled", "Returned"] as const;
 
@@ -68,6 +69,8 @@ export default function Orders() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewOrder, setViewOrder] = useState<OrderRow | null>(null);
   const [viewItems, setViewItems] = useState<OrderItemRow[]>([]);
@@ -223,12 +226,24 @@ export default function Orders() {
     setEditOpen(true);
   };
 
-  const filtered = orders.filter(
-    (o) =>
-      o.invoice_code.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer_name.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer_phone.includes(search)
-  );
+  const filtered = useMemo(() => {
+    const result = orders.filter(
+      (o) =>
+        o.invoice_code.toLowerCase().includes(search.toLowerCase()) ||
+        o.customer_name.toLowerCase().includes(search.toLowerCase()) ||
+        o.customer_phone.includes(search)
+    );
+    result.sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === "invoice") {
+        cmp = a.invoice_code.localeCompare(b.invoice_code);
+      } else {
+        cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }
+      return sortDirection === "asc" ? cmp : -cmp;
+    });
+    return result;
+  }, [orders, search, sortBy, sortDirection]);
 
   const addItem = () => setItems([...items, { product_id: "", quantity: 1 }]);
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
@@ -388,18 +403,26 @@ export default function Orders() {
         )}
       </div>
 
+      {/* Glass Search Bar */}
+      <div className="mb-6">
+        <GlassSearchBar
+          placeholder="Search by invoice, name, or phone..."
+          value={search}
+          onChange={setSearch}
+          sortOptions={[
+            { label: "Date", value: "created_at" },
+            { label: "Invoice", value: "invoice" },
+          ]}
+          sortValue={sortBy}
+          sortDirection={sortDirection}
+          onSortChange={setSortBy}
+          onSortDirectionChange={setSortDirection}
+        />
+      </div>
+
       <Card className="glass-card">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative max-w-sm flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by invoice, name, or phone..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-background/50 border-border text-card-foreground"
-              />
-            </div>
+        <CardContent className="pt-6">
+          <div className="flex justify-end mb-4">
             <Button
               variant="outline"
               size="sm"
@@ -409,8 +432,6 @@ export default function Orders() {
               {showDeleted ? "Hide Deleted" : "Show Deleted"}
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-12">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-secondary border-t-transparent" />
