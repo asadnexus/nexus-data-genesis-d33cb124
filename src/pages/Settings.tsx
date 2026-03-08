@@ -170,6 +170,19 @@ export default function Settings() {
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  // Toggle status mutation
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const { error } = await supabase.from("couriers").update({ is_active: active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["couriers"] });
+      toast({ title: "Courier status updated" });
+    },
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     saveMutation.mutate();
