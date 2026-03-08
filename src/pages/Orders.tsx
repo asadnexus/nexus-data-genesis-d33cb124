@@ -291,6 +291,7 @@ export default function Orders() {
           note: editNote.trim() || null,
           status: editStatus,
           tracking_code: editTrackingCode.trim() || null,
+          courier_id: editCourier || null,
         })
         .eq("id", editOrder.id);
       if (error) throw error;
