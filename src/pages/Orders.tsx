@@ -29,6 +29,7 @@ interface OrderRow {
   customer_phone: string;
   customer_address: string | null;
   customer_id: string | null;
+  courier_id: string | null;
   order_value: number;
   advance: number;
   total_due: number;
@@ -82,6 +83,7 @@ export default function Orders() {
   const [cod, setCod] = useState("0");
   const [note, setNote] = useState("");
   const [invoiceCode, setInvoiceCode] = useState("");
+  const [selectedCourier, setSelectedCourier] = useState("");
 
   // Edit form state
   const [editOrder, setEditOrder] = useState<OrderRow | null>(null);
@@ -93,6 +95,7 @@ export default function Orders() {
   const [editNote, setEditNote] = useState("");
   const [editStatus, setEditStatus] = useState("Pending");
   const [editTrackingCode, setEditTrackingCode] = useState("");
+  const [editCourier, setEditCourier] = useState("");
 
   const canEdit = role === "main_admin" || role === "sub_admin";
 
@@ -116,6 +119,20 @@ export default function Orders() {
         .from("products")
         .select("id, name, code, price, stock")
         .is("deleted_at", null)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch active couriers
+  const { data: couriers = [] } = useQuery({
+    queryKey: ["couriers-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("couriers")
+        .select("id, name, is_active")
+        .eq("is_active", true)
         .order("name");
       if (error) throw error;
       return data;
@@ -187,6 +204,7 @@ export default function Orders() {
     setCod("0");
     setNote("");
     setInvoiceCode("");
+    setSelectedCourier("");
     setDialogOpen(true);
     generateCode();
   };
@@ -201,6 +219,7 @@ export default function Orders() {
     setEditNote(order.note || "");
     setEditStatus(order.status || "Pending");
     setEditTrackingCode(order.tracking_code || "");
+    setEditCourier(order.courier_id || "");
     setEditOpen(true);
   };
 
@@ -272,6 +291,7 @@ export default function Orders() {
           note: editNote.trim() || null,
           status: editStatus,
           tracking_code: editTrackingCode.trim() || null,
+          courier_id: editCourier || null,
         })
         .eq("id", editOrder.id);
       if (error) throw error;
@@ -605,6 +625,24 @@ export default function Orders() {
               </div>
             </div>
 
+            {/* Courier Selection */}
+            {couriers.length > 0 && (
+              <div className="space-y-2">
+                <Label>Courier</Label>
+                <Select value={selectedCourier} onValueChange={setSelectedCourier}>
+                  <SelectTrigger className="bg-background/50 border-border">
+                    <SelectValue placeholder="Select courier (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No courier</SelectItem>
+                    {couriers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <Separator />
 
             {/* Order Summary */}
@@ -738,6 +776,20 @@ export default function Orders() {
                     className="bg-background/50 border-border"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Courier</Label>
+                  <Select value={editCourier} onValueChange={setEditCourier}>
+                    <SelectTrigger className="bg-background/50 border-border">
+                      <SelectValue placeholder="Select courier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No courier</SelectItem>
+                      {couriers.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <Separator />
@@ -827,6 +879,12 @@ export default function Orders() {
                   <>
                     <span className="text-muted-foreground">Tracking</span>
                     <span className="font-mono">{viewOrder.tracking_code}</span>
+                  </>
+                )}
+                {viewOrder.courier_id && (
+                  <>
+                    <span className="text-muted-foreground">Courier</span>
+                    <span>{couriers.find(c => c.id === viewOrder.courier_id)?.name || "—"}</span>
                   </>
                 )}
               </div>
