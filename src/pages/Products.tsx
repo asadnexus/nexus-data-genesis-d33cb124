@@ -265,7 +265,7 @@ export default function Products() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="glass-card">
+        <DialogContent className="bg-background border-border">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit Product" : "New Product"}</DialogTitle>
           </DialogHeader>

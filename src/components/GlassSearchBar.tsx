@@ -55,7 +55,7 @@ export function GlassSearchBar({
           <Search
             className={cn(
               "h-5 w-5 shrink-0 transition-colors duration-300",
-              focused ? "text-secondary" : "text-muted-foreground/70"
+              focused ? "text-secondary" : "text-card-foreground/60"
             )}
           />
 
@@ -70,7 +70,7 @@ export function GlassSearchBar({
             placeholder={placeholder}
             className={cn(
               "flex-1 bg-transparent border-none outline-none",
-              "text-foreground placeholder:text-muted-foreground/50",
+              "text-card-foreground placeholder:text-card-foreground/40",
               "text-sm font-medium tracking-wide",
               "transition-all duration-300",
             )}
@@ -82,7 +82,7 @@ export function GlassSearchBar({
               <select
                 value={sortValue}
                 onChange={(e) => onSortChange?.(e.target.value)}
-                className="bg-background/40 border border-border/40 rounded-lg text-xs text-foreground px-2 py-1.5 outline-none cursor-pointer hover:border-border/70 transition-colors"
+                className="bg-background/40 border border-border/40 rounded-lg text-xs text-card-foreground px-2 py-1.5 outline-none cursor-pointer hover:border-border/70 transition-colors"
               >
                 {sortOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -97,7 +97,7 @@ export function GlassSearchBar({
                   "p-1.5 rounded-lg transition-all duration-200",
                   "bg-background/40 border border-border/40",
                   "hover:border-border/70 hover:bg-background/60",
-                  "text-muted-foreground hover:text-foreground"
+                  "text-card-foreground/60 hover:text-card-foreground"
                 )}
                 title={sortDirection === "asc" ? "Ascending" : "Descending"}
               >
@@ -118,7 +118,7 @@ export function GlassSearchBar({
               className={cn(
                 "p-1.5 rounded-lg transition-all duration-200",
                 "hover:bg-background/40",
-                "text-muted-foreground/60 hover:text-foreground"
+                "text-card-foreground/50 hover:text-card-foreground"
               )}
             >
               <X className="h-4 w-4" />

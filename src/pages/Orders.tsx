@@ -535,7 +535,7 @@ export default function Orders() {
 
       {/* New Order Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="glass-card max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-background border-border max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>New Order</DialogTitle>
           </DialogHeader>
