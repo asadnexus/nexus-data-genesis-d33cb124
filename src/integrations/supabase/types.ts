@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      couriers: {
+        Row: {
+          api_key: string
+          base_url: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          name: string
+          secret_key: string
+          updated_at: string
+        }
+        Insert: {
+          api_key?: string
+          base_url?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          name: string
+          secret_key?: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          base_url?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          secret_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
@@ -102,6 +138,7 @@ export type Database = {
         Row: {
           advance: number | null
           cod: number | null
+          courier_id: string | null
           created_at: string
           created_by: string
           customer_address: string | null
@@ -121,6 +158,7 @@ export type Database = {
         Insert: {
           advance?: number | null
           cod?: number | null
+          courier_id?: string | null
           created_at?: string
           created_by: string
           customer_address?: string | null
@@ -140,6 +178,7 @@ export type Database = {
         Update: {
           advance?: number | null
           cod?: number | null
+          courier_id?: string | null
           created_at?: string
           created_by?: string
           customer_address?: string | null
@@ -157,6 +196,13 @@ export type Database = {
           tracking_code?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "couriers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_customer_id_fkey"
             columns: ["customer_id"]
