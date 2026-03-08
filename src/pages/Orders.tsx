@@ -29,6 +29,7 @@ interface OrderRow {
   customer_phone: string;
   customer_address: string | null;
   customer_id: string | null;
+  courier_id: string | null;
   order_value: number;
   advance: number;
   total_due: number;
