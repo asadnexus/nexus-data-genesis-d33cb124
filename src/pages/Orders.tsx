@@ -95,6 +95,7 @@ export default function Orders() {
   const [editNote, setEditNote] = useState("");
   const [editStatus, setEditStatus] = useState("Pending");
   const [editTrackingCode, setEditTrackingCode] = useState("");
+  const [editCourier, setEditCourier] = useState("");
 
   const canEdit = role === "main_admin" || role === "sub_admin";
 
