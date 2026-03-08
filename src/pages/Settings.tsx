@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +11,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Eye, EyeOff, Truck, Settings as SettingsIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
@@ -163,6 +170,19 @@ export default function Settings() {
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  // Toggle status mutation
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const { error } = await supabase.from("couriers").update({ is_active: active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["couriers"] });
+      toast({ title: "Courier status updated" });
+    },
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     saveMutation.mutate();
@@ -229,15 +249,34 @@ export default function Settings() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge
-                          className={
+                        {canEdit ? (
+                          <Select
+                            value={courier.is_active ? "active" : "inactive"}
+                            onValueChange={(val) => toggleStatusMutation.mutate({ id: courier.id, active: val === "active" })}
+                          >
+                            <SelectTrigger className={cn(
+                              "w-[110px] h-8 text-xs font-medium border",
+                              courier.is_active
+                                ? "bg-green-500/20 text-green-400 border-green-500/30"
+                                : "bg-muted text-muted-foreground border-border"
+                            )}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className={cn(
+                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border",
                             courier.is_active
-                              ? "bg-green-500/20 text-green-400 border-green-500/30 border"
-                              : "bg-muted text-muted-foreground border-border border"
-                          }
-                        >
-                          {courier.is_active ? "Active" : "Inactive"}
-                        </Badge>
+                              ? "bg-green-500/20 text-green-400 border-green-500/30"
+                              : "bg-muted text-muted-foreground border-border"
+                          )}>
+                            {courier.is_active ? "Active" : "Inactive"}
+                          </span>
+                        )}
                         {canEdit && (
                           <>
                             <Button size="icon" variant="ghost" onClick={() => openEdit(courier)} title="Edit">
