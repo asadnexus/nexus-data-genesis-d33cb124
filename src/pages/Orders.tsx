@@ -11,9 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, ShoppingCart, Trash2, Eye } from "lucide-react";
+import { Plus, Search, ShoppingCart, Trash2, Eye, Pencil, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+
+const ORDER_STATUSES = ["Pending", "Confirmed", "Dispatched", "Delivered", "Cancelled", "Returned"] as const;
 
 interface OrderItem {
   product_id: string;
@@ -26,6 +28,7 @@ interface OrderRow {
   customer_name: string;
   customer_phone: string;
   customer_address: string | null;
+  customer_id: string | null;
   order_value: number;
   advance: number;
   total_due: number;
@@ -35,6 +38,7 @@ interface OrderRow {
   tracking_code: string | null;
   created_at: string;
   deleted_at: string | null;
+  created_by: string;
 }
 
 interface OrderItemRow {
@@ -46,6 +50,17 @@ interface OrderItemRow {
   subtotal: number;
 }
 
+function statusColor(status: string | null): string {
+  switch (status) {
+    case "Confirmed": return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+    case "Dispatched": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+    case "Delivered": return "bg-green-500/20 text-green-400 border-green-500/30";
+    case "Cancelled": return "bg-destructive/20 text-destructive border-destructive/30";
+    case "Returned": return "bg-orange-500/20 text-orange-400 border-orange-500/30";
+    default: return "bg-muted text-muted-foreground border-border";
+  }
+}
+
 export default function Orders() {
   const { user, role } = useAuth();
   const { toast } = useToast();
@@ -55,8 +70,9 @@ export default function Orders() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewOrder, setViewOrder] = useState<OrderRow | null>(null);
   const [viewItems, setViewItems] = useState<OrderItemRow[]>([]);
+  const [editOpen, setEditOpen] = useState(false);
 
-  // Order form state
+  // Order form state (create)
   const [phone, setPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
@@ -66,6 +82,17 @@ export default function Orders() {
   const [cod, setCod] = useState("0");
   const [note, setNote] = useState("");
   const [invoiceCode, setInvoiceCode] = useState("");
+
+  // Edit form state
+  const [editOrder, setEditOrder] = useState<OrderRow | null>(null);
+  const [editCustomerName, setEditCustomerName] = useState("");
+  const [editCustomerPhone, setEditCustomerPhone] = useState("");
+  const [editCustomerAddress, setEditCustomerAddress] = useState("");
+  const [editAdvance, setEditAdvance] = useState("0");
+  const [editCod, setEditCod] = useState("0");
+  const [editNote, setEditNote] = useState("");
+  const [editStatus, setEditStatus] = useState("Pending");
+  const [editTrackingCode, setEditTrackingCode] = useState("");
 
   const canEdit = role === "main_admin" || role === "sub_admin";
 
@@ -95,7 +122,7 @@ export default function Orders() {
     },
   });
 
-  // Customer phone lookup
+  // Customer phone lookup (create form)
   useEffect(() => {
     if (phone.length < 3) {
       setCustomerName("");
@@ -136,6 +163,13 @@ export default function Orders() {
     setCod(String(totalDue > 0 ? totalDue : 0));
   }, [totalDue]);
 
+  // Edit form: auto-calculate total_due
+  const editTotalDue = editOrder ? Number(editOrder.order_value) - Number(editAdvance || 0) : 0;
+
+  useEffect(() => {
+    setEditCod(String(editTotalDue > 0 ? editTotalDue : 0));
+  }, [editTotalDue]);
+
   // Generate invoice code when dialog opens
   const generateCode = async () => {
     if (!user) return;
@@ -155,6 +189,19 @@ export default function Orders() {
     setInvoiceCode("");
     setDialogOpen(true);
     generateCode();
+  };
+
+  const openEdit = async (order: OrderRow) => {
+    setEditOrder(order);
+    setEditCustomerName(order.customer_name);
+    setEditCustomerPhone(order.customer_phone);
+    setEditCustomerAddress(order.customer_address || "");
+    setEditAdvance(String(order.advance ?? 0));
+    setEditCod(String(order.cod ?? 0));
+    setEditNote(order.note || "");
+    setEditStatus(order.status || "Pending");
+    setEditTrackingCode(order.tracking_code || "");
+    setEditOpen(true);
   };
 
   const filtered = orders.filter(
@@ -206,10 +253,64 @@ export default function Orders() {
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  // Edit order mutation
+  const editMutation = useMutation({
+    mutationFn: async () => {
+      if (!editOrder) throw new Error("No order selected");
+      const newAdvance = Number(editAdvance || 0);
+      const newTotalDue = Number(editOrder.order_value) - newAdvance;
+
+      const { error } = await supabase
+        .from("orders")
+        .update({
+          customer_name: editCustomerName.trim(),
+          customer_phone: editCustomerPhone.trim(),
+          customer_address: editCustomerAddress.trim() || null,
+          advance: newAdvance,
+          total_due: newTotalDue > 0 ? newTotalDue : 0,
+          cod: Number(editCod || 0),
+          note: editNote.trim() || null,
+          status: editStatus,
+          tracking_code: editTrackingCode.trim() || null,
+        })
+        .eq("id", editOrder.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast({ title: "Order updated" });
+      setEditOpen(false);
+      setEditOrder(null);
+      // Refresh view if open
+      if (viewOrder && viewOrder.id === editOrder?.id) {
+        setViewOrder(null);
+      }
+    },
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createMutation.mutate();
   };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    editMutation.mutate();
+  };
+
+  // Quick status change
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("orders").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast({ title: "Status updated" });
+    },
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
 
   // View order details
   const openViewOrder = async (order: OrderRow) => {
@@ -233,6 +334,22 @@ export default function Orders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Order deleted" });
+    },
+    onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  // Restore order
+  const restoreMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("orders")
+        .update({ deleted_at: null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast({ title: "Order restored" });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -309,29 +426,59 @@ export default function Orders() {
                       <TableCell className="text-right">{Number(o.advance).toLocaleString()}</TableCell>
                       <TableCell className="text-right">{Number(o.cod).toLocaleString()}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={o.status === "Pending" ? "outline" : "default"}
-                          className={o.deleted_at ? "bg-destructive text-destructive-foreground" : ""}
-                        >
-                          {o.deleted_at ? "Deleted" : o.status || "Pending"}
-                        </Badge>
+                        {canEdit && !o.deleted_at ? (
+                          <Select
+                            value={o.status || "Pending"}
+                            onValueChange={(v) => statusMutation.mutate({ id: o.id, status: v })}
+                          >
+                            <SelectTrigger className={`h-7 w-[120px] text-xs border ${statusColor(o.status)}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ORDER_STATUSES.map((s) => (
+                                <SelectItem key={s} value={s}>{s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge className={`${statusColor(o.status)} border`}>
+                            {o.deleted_at ? "Deleted" : o.status || "Pending"}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {new Date(o.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => openViewOrder(o)}>
+                          <Button size="icon" variant="ghost" onClick={() => openViewOrder(o)} title="View">
                             <Eye className="h-4 w-4" />
                           </Button>
                           {canEdit && !o.deleted_at && (
+                            <>
+                              <Button size="icon" variant="ghost" onClick={() => openEdit(o)} title="Edit">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => softDeleteMutation.mutate(o.id)}
+                                className="text-destructive hover:text-destructive"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                          {canEdit && o.deleted_at && (
                             <Button
                               size="icon"
                               variant="ghost"
-                              onClick={() => softDeleteMutation.mutate(o.id)}
-                              className="text-destructive hover:text-destructive"
+                              onClick={() => restoreMutation.mutate(o.id)}
+                              className="text-green-500 hover:text-green-400"
+                              title="Restore"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <RotateCcw className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
@@ -397,7 +544,6 @@ export default function Orders() {
               </div>
 
               <div className="space-y-2">
-                {/* Header row */}
                 <div className="hidden sm:grid sm:grid-cols-[1fr_80px_80px_80px_40px] gap-2 text-xs font-medium text-muted-foreground px-1">
                   <span>Product</span>
                   <span>Qty</span>
@@ -530,6 +676,134 @@ export default function Orders() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Order Dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => { setEditOpen(open); if (!open) setEditOrder(null); }}>
+        <DialogContent className="glass-card max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Order — {editOrder?.invoice_code}</DialogTitle>
+          </DialogHeader>
+          {editOrder && (
+            <form onSubmit={handleEditSubmit} className="space-y-5">
+              {/* Customer Info */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Phone</Label>
+                  <Input
+                    value={editCustomerPhone}
+                    onChange={(e) => setEditCustomerPhone(e.target.value)}
+                    className="bg-background/50 border-border"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input
+                    value={editCustomerName}
+                    onChange={(e) => setEditCustomerName(e.target.value)}
+                    className="bg-background/50 border-border"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Address</Label>
+                <Textarea
+                  value={editCustomerAddress}
+                  onChange={(e) => setEditCustomerAddress(e.target.value)}
+                  className="bg-background/50 border-border"
+                />
+              </div>
+
+              <Separator />
+
+              {/* Status & Tracking */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select value={editStatus} onValueChange={setEditStatus}>
+                    <SelectTrigger className="bg-background/50 border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ORDER_STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Tracking Code</Label>
+                  <Input
+                    value={editTrackingCode}
+                    onChange={(e) => setEditTrackingCode(e.target.value)}
+                    placeholder="Courier tracking code"
+                    className="bg-background/50 border-border"
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Financial */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Order Value</span>
+                    <span className="font-semibold">{Number(editOrder.order_value).toLocaleString()}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Advance</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={editAdvance}
+                      onChange={(e) => setEditAdvance(e.target.value)}
+                      className="bg-background/50 border-border"
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total Due</span>
+                    <span className="font-semibold">{(editTotalDue > 0 ? editTotalDue : 0).toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label>COD</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={editCod}
+                      onChange={(e) => setEditCod(e.target.value)}
+                      className="bg-background/50 border-border"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Note</Label>
+                    <Textarea
+                      value={editNote}
+                      onChange={(e) => setEditNote(e.target.value)}
+                      className="bg-background/50 border-border"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                  disabled={editMutation.isPending}
+                >
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* View Order Dialog */}
       <Dialog open={!!viewOrder} onOpenChange={() => setViewOrder(null)}>
         <DialogContent className="glass-card max-w-lg">
@@ -546,7 +820,9 @@ export default function Orders() {
                 <span className="text-muted-foreground">Address</span>
                 <span>{viewOrder.customer_address || "—"}</span>
                 <span className="text-muted-foreground">Status</span>
-                <span>{viewOrder.status || "Pending"}</span>
+                <Badge className={`${statusColor(viewOrder.status)} border w-fit`}>
+                  {viewOrder.status || "Pending"}
+                </Badge>
                 {viewOrder.tracking_code && (
                   <>
                     <span className="text-muted-foreground">Tracking</span>
