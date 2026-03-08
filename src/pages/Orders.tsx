@@ -6,14 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, ShoppingCart, Trash2, Eye, Pencil, RotateCcw } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, Eye, Pencil, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { GlassSearchBar } from "@/components/GlassSearchBar";
 
 const ORDER_STATUSES = ["Pending", "Confirmed", "Dispatched", "Delivered", "Cancelled", "Returned"] as const;
 
