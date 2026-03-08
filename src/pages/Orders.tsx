@@ -69,6 +69,8 @@ export default function Orders() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
+  const [sortBy, setSortBy] = useState("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewOrder, setViewOrder] = useState<OrderRow | null>(null);
   const [viewItems, setViewItems] = useState<OrderItemRow[]>([]);
