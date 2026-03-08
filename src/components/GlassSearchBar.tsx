@@ -97,7 +97,7 @@ export function GlassSearchBar({
                   "p-1.5 rounded-lg transition-all duration-200",
                   "bg-background/40 border border-border/40",
                   "hover:border-border/70 hover:bg-background/60",
-                  "text-muted-foreground hover:text-foreground"
+                  "text-card-foreground/60 hover:text-card-foreground"
                 )}
                 title={sortDirection === "asc" ? "Ascending" : "Descending"}
               >
