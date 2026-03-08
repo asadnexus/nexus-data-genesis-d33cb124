@@ -678,9 +678,9 @@ export default function Orders() {
 
       {/* Edit Order Dialog */}
       <Dialog open={editOpen} onOpenChange={(open) => { setEditOpen(open); if (!open) setEditOrder(null); }}>
-        <DialogContent className="glass-card max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-background border-border max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Order — {editOrder?.invoice_code}</DialogTitle>
+            <DialogTitle className="text-foreground">Edit Order — {editOrder?.invoice_code}</DialogTitle>
           </DialogHeader>
           {editOrder && (
             <form onSubmit={handleEditSubmit} className="space-y-5">
