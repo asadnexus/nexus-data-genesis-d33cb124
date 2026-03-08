@@ -16,6 +16,7 @@ import Products from "./pages/Products";
 import Customers from "./pages/Customers";
 import UsersManagement from "./pages/UsersManagement";
 import Orders from "./pages/Orders";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
