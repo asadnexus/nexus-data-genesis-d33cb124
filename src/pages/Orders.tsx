@@ -83,6 +83,7 @@ export default function Orders() {
   const [cod, setCod] = useState("0");
   const [note, setNote] = useState("");
   const [invoiceCode, setInvoiceCode] = useState("");
+  const [selectedCourier, setSelectedCourier] = useState("");
 
   // Edit form state
   const [editOrder, setEditOrder] = useState<OrderRow | null>(null);
