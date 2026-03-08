@@ -1008,7 +1008,7 @@ export default function Orders() {
               </div>
 
               {/* Action buttons */}
-              <div className="flex gap-2 justify-center">
+              <div className="flex gap-2 justify-center flex-wrap">
                 <Button
                   size="sm"
                   variant="outline"
@@ -1017,20 +1017,7 @@ export default function Orders() {
                     if (!content) return;
                     const printWindow = window.open("", "_blank");
                     if (!printWindow) return;
-                    printWindow.document.write(`
-                      <!DOCTYPE html>
-                      <html>
-                      <head>
-                        <title>Invoice ${viewOrder.invoice_code}</title>
-                        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-                        <style>
-                          body { margin: 0; padding: 0; }
-                          @media print { body { margin: 0; } }
-                        </style>
-                      </head>
-                      <body>${content.outerHTML}</body>
-                      </html>
-                    `);
+                    printWindow.document.write(`<!DOCTYPE html><html><head><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{width:80mm;margin:0 auto}@media print{@page{size:80mm auto;margin:0}body{width:80mm}}</style></head><body>${content.outerHTML}</body></html>`);
                     printWindow.document.close();
                     printWindow.onload = () => { printWindow.print(); };
                   }}
@@ -1043,24 +1030,15 @@ export default function Orders() {
                   onClick={() => {
                     const content = invoiceRef.current;
                     if (!content) return;
-                    const blob = new Blob([`
-                      <!DOCTYPE html>
-                      <html>
-                      <head>
-                        <meta charset="utf-8">
-                        <title>Invoice ${viewOrder.invoice_code}</title>
-                        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-                      </head>
-                      <body style="margin:0;padding:0;">${content.outerHTML}</body>
-                      </html>
-                    `], { type: "text/html" });
+                    const htmlStr = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{width:80mm;margin:0 auto}@media print{@page{size:80mm auto;margin:0}body{width:80mm}}</style></head><body>${content.outerHTML}</body></html>`;
+                    const blob = new Blob([htmlStr], { type: "text/html" });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement("a");
                     a.href = url;
                     a.download = `invoice-${viewOrder.invoice_code}.html`;
                     a.click();
                     URL.revokeObjectURL(url);
-                    toast({ title: "Invoice downloaded", description: "Open in browser and use Print → Save as PDF" });
+                    toast({ title: "Invoice downloaded", description: "Open in browser → Print → Save as PDF" });
                   }}
                 >
                   <Download className="mr-1 h-4 w-4" /> Download
@@ -1071,22 +1049,58 @@ export default function Orders() {
                   onClick={async () => {
                     const content = invoiceRef.current;
                     if (!content) return;
-                    const htmlStr = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"></head><body style="margin:0;padding:0;">${content.outerHTML}</body></html>`;
+                    const htmlStr = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{display:flex;justify-content:center;min-height:100vh;background:#f5f5f5;padding:16px 0}@media print{@page{size:80mm auto;margin:0}body{background:#fff;padding:0}}</style></head><body>${content.outerHTML}</body></html>`;
+                    
+                    const path = `${viewOrder.invoice_code}-${Date.now()}.html`;
                     const blob = new Blob([htmlStr], { type: "text/html" });
-                    const file = new File([blob], `invoice-${viewOrder.invoice_code}.html`, { type: "text/html" });
-                    if (navigator.share && navigator.canShare({ files: [file] })) {
-                      await navigator.share({ files: [file], title: `Invoice ${viewOrder.invoice_code}` });
-                    } else if (navigator.clipboard) {
-                      await navigator.clipboard.writeText(content.innerText);
-                      toast({ title: "Invoice text copied to clipboard" });
-                    } else {
-                      toast({ title: "Sharing not supported on this device", variant: "destructive" });
+                    const file = new File([blob], path, { type: "text/html" });
+
+                    toast({ title: "Uploading invoice...", description: "Generating shareable link" });
+
+                    const { error: uploadError } = await supabase.storage
+                      .from("invoices")
+                      .upload(path, file, { upsert: true, contentType: "text/html" });
+
+                    if (uploadError) {
+                      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+                      return;
                     }
+
+                    const { data: urlData } = supabase.storage.from("invoices").getPublicUrl(path);
+                    const publicUrl = urlData.publicUrl;
+
+                    // Save invoice_url to order
+                    await supabase.from("orders").update({ invoice_url: publicUrl }).eq("id", viewOrder.id);
+
+                    // Copy to clipboard
+                    await navigator.clipboard.writeText(publicUrl);
+                    toast({ title: "Link copied!", description: "Shareable invoice link copied to clipboard" });
                   }}
                 >
-                  <Share2 className="mr-1 h-4 w-4" /> Share
+                  <Link className="mr-1 h-4 w-4" /> Share Link
                 </Button>
               </div>
+
+              {/* Show existing share link if available */}
+              {viewOrder.invoice_url && (
+                <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 text-xs">
+                  <Link className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <a href={viewOrder.invoice_url} target="_blank" rel="noopener noreferrer" className="text-primary truncate hover:underline">
+                    {viewOrder.invoice_url}
+                  </a>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-xs shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(viewOrder.invoice_url!);
+                      toast({ title: "Link copied!" });
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
