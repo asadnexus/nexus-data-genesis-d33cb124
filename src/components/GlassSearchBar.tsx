@@ -118,7 +118,7 @@ export function GlassSearchBar({
               className={cn(
                 "p-1.5 rounded-lg transition-all duration-200",
                 "hover:bg-background/40",
-                "text-muted-foreground/60 hover:text-foreground"
+                "text-card-foreground/50 hover:text-card-foreground"
               )}
             >
               <X className="h-4 w-4" />
