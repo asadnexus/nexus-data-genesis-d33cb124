@@ -277,6 +277,12 @@ export default function Settings() {
                             {courier.is_active ? "Active" : "Inactive"}
                           </span>
                         )}
+                        {canEdit && (
+                          <>
+                            <Button size="icon" variant="ghost" onClick={() => openEdit(courier)} title="Edit">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
                               size="icon"
                               variant="ghost"
                               onClick={() => setDeleteId(courier.id)}
