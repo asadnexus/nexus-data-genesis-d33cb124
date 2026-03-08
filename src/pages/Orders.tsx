@@ -204,6 +204,7 @@ export default function Orders() {
     setCod("0");
     setNote("");
     setInvoiceCode("");
+    setSelectedCourier("");
     setDialogOpen(true);
     generateCode();
   };
