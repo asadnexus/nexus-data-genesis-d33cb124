@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, Enums } from "@/integrations/supabase/types";
@@ -33,29 +33,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    const { data: profileData } = await supabase
-      .from("users")
-      .select("*")
-      .eq("auth_id", userId)
-      .single();
+  const fetchProfile = useCallback(async (userId: string) => {
+    try {
+      const [profileResult, roleResult] = await Promise.all([
+        supabase.from("users").select("*").eq("auth_id", userId).single(),
+        supabase.from("user_roles").select("role").eq("user_id", userId).single(),
+      ]);
 
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .single();
-
-    setProfile(profileData);
-    setRole(roleData?.role ?? null);
-  };
+      setProfile(profileResult.data);
+      setRole(roleResult.data?.role ?? null);
+    } catch {
+      setProfile(null);
+      setRole(null);
+    }
+  }, []);
 
   useEffect(() => {
+    // Set up auth state listener FIRST (before getSession)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+
         if (session?.user) {
+          // Use setTimeout to avoid Supabase auth deadlock
           setTimeout(() => fetchProfile(session.user.id), 0);
         } else {
           setProfile(null);
@@ -65,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
+    // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -75,10 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchProfile]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Sign out only from current device (scope: local)
+    await supabase.auth.signOut({ scope: "local" });
     setUser(null);
     setSession(null);
     setProfile(null);
