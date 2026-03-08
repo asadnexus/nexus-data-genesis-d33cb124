@@ -625,6 +625,24 @@ export default function Orders() {
               </div>
             </div>
 
+            {/* Courier Selection */}
+            {couriers.length > 0 && (
+              <div className="space-y-2">
+                <Label>Courier</Label>
+                <Select value={selectedCourier} onValueChange={setSelectedCourier}>
+                  <SelectTrigger className="bg-background/50 border-border">
+                    <SelectValue placeholder="Select courier (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No courier</SelectItem>
+                    {couriers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <Separator />
 
             {/* Order Summary */}
