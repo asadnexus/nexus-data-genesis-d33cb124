@@ -235,21 +235,34 @@ export default function Settings() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge
-                          className={
+                        {canEdit ? (
+                          <Select
+                            value={courier.is_active ? "active" : "inactive"}
+                            onValueChange={(val) => toggleStatusMutation.mutate({ id: courier.id, active: val === "active" })}
+                          >
+                            <SelectTrigger className={cn(
+                              "w-[110px] h-8 text-xs font-medium border",
+                              courier.is_active
+                                ? "bg-green-500/20 text-green-400 border-green-500/30"
+                                : "bg-muted text-muted-foreground border-border"
+                            )}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className={cn(
+                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border",
                             courier.is_active
-                              ? "bg-green-500/20 text-green-400 border-green-500/30 border"
-                              : "bg-muted text-muted-foreground border-border border"
-                          }
-                        >
-                          {courier.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                        {canEdit && (
-                          <>
-                            <Button size="icon" variant="ghost" onClick={() => openEdit(courier)} title="Edit">
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
+                              ? "bg-green-500/20 text-green-400 border-green-500/30"
+                              : "bg-muted text-muted-foreground border-border"
+                          )}>
+                            {courier.is_active ? "Active" : "Inactive"}
+                          </span>
+                        )}
                               size="icon"
                               variant="ghost"
                               onClick={() => setDeleteId(courier.id)}
