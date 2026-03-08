@@ -882,13 +882,24 @@ export default function Orders() {
         </DialogContent>
       </Dialog>
 
-      {/* View Order Dialog */}
-      <Dialog open={!!viewOrder} onOpenChange={() => setViewOrder(null)}>
-        <DialogContent className="bg-background border-border max-w-lg">
+      {/* View Order / Invoice Dialog */}
+      <Dialog open={!!viewOrder} onOpenChange={() => { setViewOrder(null); setInvoiceMode(false); }}>
+        <DialogContent className="bg-background border-border max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Order {viewOrder?.invoice_code}</DialogTitle>
+            <DialogTitle className="text-foreground flex items-center justify-between">
+              <span>Order {viewOrder?.invoice_code}</span>
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant={invoiceMode ? "secondary" : "outline"}
+                  onClick={() => setInvoiceMode(!invoiceMode)}
+                >
+                  {invoiceMode ? "Details" : "Invoice"}
+                </Button>
+              </div>
+            </DialogTitle>
           </DialogHeader>
-          {viewOrder && (
+          {viewOrder && !invoiceMode && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <span className="text-muted-foreground">Customer</span>
@@ -963,6 +974,119 @@ export default function Orders() {
                   </div>
                 </>
               )}
+            </div>
+          )}
+
+          {viewOrder && invoiceMode && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border overflow-hidden bg-white">
+                <InvoiceTemplate
+                  ref={invoiceRef}
+                  data={{
+                    invoice_code: viewOrder.invoice_code,
+                    customer_name: viewOrder.customer_name,
+                    customer_phone: viewOrder.customer_phone,
+                    customer_address: viewOrder.customer_address,
+                    order_value: viewOrder.order_value,
+                    advance: Number(viewOrder.advance),
+                    total_due: viewOrder.total_due,
+                    cod: Number(viewOrder.cod),
+                    note: viewOrder.note,
+                    status: viewOrder.status,
+                    created_at: viewOrder.created_at,
+                    items: viewItems,
+                    company: {
+                      name: companySettings?.name || "",
+                      logo_url: companySettings?.logo_url || "",
+                      address: companySettings?.address || "",
+                      phone: companySettings?.phone || "",
+                      email: companySettings?.email || "",
+                      website: companySettings?.website || "",
+                    },
+                  }}
+                />
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2 justify-center">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const content = invoiceRef.current;
+                    if (!content) return;
+                    const printWindow = window.open("", "_blank");
+                    if (!printWindow) return;
+                    printWindow.document.write(`
+                      <!DOCTYPE html>
+                      <html>
+                      <head>
+                        <title>Invoice ${viewOrder.invoice_code}</title>
+                        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+                        <style>
+                          body { margin: 0; padding: 0; }
+                          @media print { body { margin: 0; } }
+                        </style>
+                      </head>
+                      <body>${content.outerHTML}</body>
+                      </html>
+                    `);
+                    printWindow.document.close();
+                    printWindow.onload = () => { printWindow.print(); };
+                  }}
+                >
+                  <Printer className="mr-1 h-4 w-4" /> Print
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const content = invoiceRef.current;
+                    if (!content) return;
+                    const blob = new Blob([`
+                      <!DOCTYPE html>
+                      <html>
+                      <head>
+                        <meta charset="utf-8">
+                        <title>Invoice ${viewOrder.invoice_code}</title>
+                        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+                      </head>
+                      <body style="margin:0;padding:0;">${content.outerHTML}</body>
+                      </html>
+                    `], { type: "text/html" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `invoice-${viewOrder.invoice_code}.html`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast({ title: "Invoice downloaded", description: "Open in browser and use Print → Save as PDF" });
+                  }}
+                >
+                  <Download className="mr-1 h-4 w-4" /> Download
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    const content = invoiceRef.current;
+                    if (!content) return;
+                    const htmlStr = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"></head><body style="margin:0;padding:0;">${content.outerHTML}</body></html>`;
+                    const blob = new Blob([htmlStr], { type: "text/html" });
+                    const file = new File([blob], `invoice-${viewOrder.invoice_code}.html`, { type: "text/html" });
+                    if (navigator.share && navigator.canShare({ files: [file] })) {
+                      await navigator.share({ files: [file], title: `Invoice ${viewOrder.invoice_code}` });
+                    } else if (navigator.clipboard) {
+                      await navigator.clipboard.writeText(content.innerText);
+                      toast({ title: "Invoice text copied to clipboard" });
+                    } else {
+                      toast({ title: "Sharing not supported on this device", variant: "destructive" });
+                    }
+                  }}
+                >
+                  <Share2 className="mr-1 h-4 w-4" /> Share
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
