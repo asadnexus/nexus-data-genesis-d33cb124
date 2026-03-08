@@ -50,37 +50,21 @@ export default function UsersManagement() {
 
   const createUserMutation = useMutation({
     mutationFn: async (values: typeof form) => {
-      // Create auth user via admin API through edge function
-      // For now, use signUp (the user will need to verify email)
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: { data: { name: values.name, phone: values.phone } },
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: {
+          name: values.name,
+          email: values.email,
+          phone: values.phone || null,
+          password: values.password,
+          role: values.role,
+        },
       });
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("Failed to create user");
-
-      const { data: code } = await supabase.rpc("generate_user_code", { _role: values.role });
-
-      const { error: profileError } = await supabase.from("users").insert({
-        auth_id: authData.user.id,
-        user_code: code!,
-        email: values.email,
-        name: values.name,
-        phone: values.phone || null,
-        created_by: user!.id,
-      });
-      if (profileError) throw profileError;
-
-      const { error: roleError } = await supabase.from("user_roles").insert({
-        user_id: authData.user.id,
-        role: values.role,
-      });
-      if (roleError) throw roleError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users-management"] });
-      toast({ title: "User created", description: "The user will need to verify their email." });
+      toast({ title: "User created", description: "The user can now log in immediately." });
       setDialogOpen(false);
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
