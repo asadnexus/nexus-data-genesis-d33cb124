@@ -82,7 +82,7 @@ export function GlassSearchBar({
               <select
                 value={sortValue}
                 onChange={(e) => onSortChange?.(e.target.value)}
-                className="bg-background/40 border border-border/40 rounded-lg text-xs text-foreground px-2 py-1.5 outline-none cursor-pointer hover:border-border/70 transition-colors"
+                className="bg-background/40 border border-border/40 rounded-lg text-xs text-card-foreground px-2 py-1.5 outline-none cursor-pointer hover:border-border/70 transition-colors"
               >
                 {sortOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
