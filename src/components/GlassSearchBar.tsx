@@ -55,7 +55,7 @@ export function GlassSearchBar({
           <Search
             className={cn(
               "h-5 w-5 shrink-0 transition-colors duration-300",
-              focused ? "text-secondary" : "text-muted-foreground/70"
+              focused ? "text-secondary" : "text-card-foreground/60"
             )}
           />
 
