@@ -173,7 +173,7 @@ export default function UsersManagement() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="glass-card">
+        <DialogContent className="bg-background border-border">
           <DialogHeader><DialogTitle>Create New User</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">

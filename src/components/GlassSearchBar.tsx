@@ -70,7 +70,7 @@ export function GlassSearchBar({
             placeholder={placeholder}
             className={cn(
               "flex-1 bg-transparent border-none outline-none",
-              "text-foreground placeholder:text-muted-foreground/50",
+              "text-card-foreground placeholder:text-card-foreground/40",
               "text-sm font-medium tracking-wide",
               "transition-all duration-300",
             )}
