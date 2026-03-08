@@ -11,12 +11,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ShoppingCart, Trash2, Eye, Pencil, RotateCcw, Download, Printer, Share2, Link, Loader2 } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, Eye, Pencil, RotateCcw, Download, Printer, Share2, Link, Loader2, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { GlassSearchBar } from "@/components/GlassSearchBar";
 import { InvoiceTemplate } from "@/components/InvoiceTemplate";
+import { CustomerReceipt } from "@/components/CustomerReceipt";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const ORDER_STATUSES = ["Pending", "Confirmed", "Dispatched", "Delivered", "Cancelled", "Returned"] as const;
 
@@ -72,6 +79,7 @@ export default function Orders() {
   const queryClient = useQueryClient();
   const { settings: companySettings } = useCompanySettings();
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const customerReceiptRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [sortBy, setSortBy] = useState("created_at");
@@ -980,6 +988,7 @@ export default function Orders() {
 
           {viewOrder && invoiceMode && (
             <div className="space-y-4">
+              {/* Thermal Receipt (visible) */}
               <div className="rounded-lg border border-border overflow-hidden bg-white">
                 <InvoiceTemplate
                   ref={invoiceRef}
@@ -1004,53 +1013,125 @@ export default function Orders() {
                       email: companySettings?.email || "",
                       website: companySettings?.website || "",
                     },
+                    invoice_url: viewOrder.invoice_url,
+                  }}
+                />
+              </div>
+
+              {/* Hidden Customer Receipt for download/print */}
+              <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+                <CustomerReceipt
+                  ref={customerReceiptRef}
+                  data={{
+                    invoice_code: viewOrder.invoice_code,
+                    customer_name: viewOrder.customer_name,
+                    customer_phone: viewOrder.customer_phone,
+                    customer_address: viewOrder.customer_address,
+                    order_value: viewOrder.order_value,
+                    advance: Number(viewOrder.advance),
+                    total_due: viewOrder.total_due,
+                    cod: Number(viewOrder.cod),
+                    note: viewOrder.note,
+                    status: viewOrder.status,
+                    created_at: viewOrder.created_at,
+                    items: viewItems,
+                    company: {
+                      name: companySettings?.name || "",
+                      logo_url: companySettings?.logo_url || "",
+                      address: companySettings?.address || "",
+                      phone: companySettings?.phone || "",
+                      email: companySettings?.email || "",
+                      website: companySettings?.website || "",
+                    },
+                    invoice_url: viewOrder.invoice_url,
                   }}
                 />
               </div>
 
               {/* Action buttons */}
               <div className="flex gap-2 justify-center flex-wrap">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const content = invoiceRef.current;
-                    if (!content) return;
-                    const printWindow = window.open("", "_blank");
-                    if (!printWindow) return;
-                    printWindow.document.write(`<!DOCTYPE html><html><head><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{width:80mm;margin:0 auto}@media print{@page{size:80mm auto;margin:0}body{width:80mm}}</style></head><body>${content.outerHTML}</body></html>`);
-                    printWindow.document.close();
-                    printWindow.onload = () => { printWindow.print(); };
-                  }}
-                >
-                  <Printer className="mr-1 h-4 w-4" /> Print
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const content = invoiceRef.current;
-                    if (!content) return;
-                    const htmlStr = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{width:80mm;margin:0 auto}@media print{@page{size:80mm auto;margin:0}body{width:80mm}}</style></head><body>${content.outerHTML}</body></html>`;
-                    const blob = new Blob([htmlStr], { type: "text/html" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `invoice-${viewOrder.invoice_code}.html`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    toast({ title: "Invoice downloaded", description: "Open in browser → Print → Save as PDF" });
-                  }}
-                >
-                  <Download className="mr-1 h-4 w-4" /> Download
-                </Button>
+                {/* Print Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <Printer className="mr-1 h-4 w-4" /> Print <ChevronDown className="ml-1 h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => {
+                      const content = invoiceRef.current;
+                      if (!content) return;
+                      const printWindow = window.open("", "_blank");
+                      if (!printWindow) return;
+                      printWindow.document.write(`<!DOCTYPE html><html><head><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{width:80mm;margin:0 auto}@media print{@page{size:80mm auto;margin:0}body{width:80mm}}</style></head><body>${content.outerHTML}</body></html>`);
+                      printWindow.document.close();
+                      printWindow.onload = () => { printWindow.print(); };
+                    }}>
+                      <Printer className="mr-2 h-4 w-4" /> Thermal Print
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      const content = customerReceiptRef.current;
+                      if (!content) return;
+                      const printWindow = window.open("", "_blank");
+                      if (!printWindow) return;
+                      printWindow.document.write(`<!DOCTYPE html><html><head><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{width:210mm;margin:0 auto}@media print{@page{size:A4;margin:10mm}body{width:210mm}}</style></head><body>${content.outerHTML}</body></html>`);
+                      printWindow.document.close();
+                      printWindow.onload = () => { printWindow.print(); };
+                    }}>
+                      <Printer className="mr-2 h-4 w-4" /> Customer Print
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Download Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <Download className="mr-1 h-4 w-4" /> Download <ChevronDown className="ml-1 h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => {
+                      const content = invoiceRef.current;
+                      if (!content) return;
+                      const htmlStr = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{width:80mm;margin:0 auto}@media print{@page{size:80mm auto;margin:0}body{width:80mm}}</style></head><body>${content.outerHTML}</body></html>`;
+                      const blob = new Blob([htmlStr], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `thermal-${viewOrder.invoice_code}.html`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast({ title: "Thermal Receipt downloaded" });
+                    }}>
+                      <Download className="mr-2 h-4 w-4" /> Thermal Receipt
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      const content = customerReceiptRef.current;
+                      if (!content) return;
+                      const htmlStr = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{width:210mm;margin:0 auto}@media print{@page{size:A4;margin:10mm}body{width:210mm}}</style></head><body>${content.outerHTML}</body></html>`;
+                      const blob = new Blob([htmlStr], { type: "text/html" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `invoice-${viewOrder.invoice_code}.html`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast({ title: "Customer Receipt downloaded" });
+                    }}>
+                      <Download className="mr-2 h-4 w-4" /> Customer Receipt
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Share Link */}
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={async () => {
-                    const content = invoiceRef.current;
+                    const content = customerReceiptRef.current;
                     if (!content) return;
-                    const htmlStr = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{display:flex;justify-content:center;min-height:100vh;background:#f5f5f5;padding:16px 0}@media print{@page{size:80mm auto;margin:0}body{background:#fff;padding:0}}</style></head><body>${content.outerHTML}</body></html>`;
+                    const htmlStr = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ${viewOrder.invoice_code}</title><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{display:flex;justify-content:center;min-height:100vh;background:#f5f5f5;padding:16px}@media print{@page{size:A4;margin:10mm}body{background:#fff;padding:0}}</style></head><body>${content.outerHTML}</body></html>`;
                     
                     const path = `${viewOrder.invoice_code}-${Date.now()}.html`;
                     const blob = new Blob([htmlStr], { type: "text/html" });
@@ -1070,10 +1151,7 @@ export default function Orders() {
                     const { data: urlData } = supabase.storage.from("invoices").getPublicUrl(path);
                     const publicUrl = urlData.publicUrl;
 
-                    // Save invoice_url to order
                     await supabase.from("orders").update({ invoice_url: publicUrl }).eq("id", viewOrder.id);
-
-                    // Copy to clipboard
                     await navigator.clipboard.writeText(publicUrl);
                     toast({ title: "Link copied!", description: "Shareable invoice link copied to clipboard" });
                   }}

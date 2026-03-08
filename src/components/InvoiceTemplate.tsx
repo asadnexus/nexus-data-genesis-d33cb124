@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { QRCodeSVG } from "qrcode.react";
 
 interface InvoiceItem {
   product_name: string;
@@ -31,6 +32,7 @@ interface InvoiceData {
   created_at: string;
   items: InvoiceItem[];
   company: CompanyInfo;
+  invoice_url?: string | null;
 }
 
 export const InvoiceTemplate = forwardRef<HTMLDivElement, { data: InvoiceData }>(
@@ -154,6 +156,14 @@ export const InvoiceTemplate = forwardRef<HTMLDivElement, { data: InvoiceData }>
         {data.note && (
           <div style={{ marginTop: "8px", padding: "6px 8px", background: "#fffde7", borderRadius: "4px", fontSize: "10px", color: "#555" }}>
             <strong>Note:</strong> {data.note}
+          </div>
+        )}
+
+        {/* QR Code */}
+        {data.invoice_url && (
+          <div style={{ textAlign: "center", marginTop: "10px" }}>
+            <QRCodeSVG value={data.invoice_url} size={64} level="M" />
+            <div style={{ fontSize: "8px", color: "#999", marginTop: "2px" }}>Scan for digital copy</div>
           </div>
         )}
 
