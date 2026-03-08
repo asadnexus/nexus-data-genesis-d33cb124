@@ -806,9 +806,9 @@ export default function Orders() {
 
       {/* View Order Dialog */}
       <Dialog open={!!viewOrder} onOpenChange={() => setViewOrder(null)}>
-        <DialogContent className="glass-card max-w-lg">
+        <DialogContent className="bg-background border-border max-w-lg">
           <DialogHeader>
-            <DialogTitle>Order {viewOrder?.invoice_code}</DialogTitle>
+            <DialogTitle className="text-foreground">Order {viewOrder?.invoice_code}</DialogTitle>
           </DialogHeader>
           {viewOrder && (
             <div className="space-y-4">
