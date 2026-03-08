@@ -69,6 +69,8 @@ export default function Orders() {
   const { user, role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { settings: companySettings } = useCompanySettings();
+  const invoiceRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [sortBy, setSortBy] = useState("created_at");
@@ -77,6 +79,7 @@ export default function Orders() {
   const [viewOrder, setViewOrder] = useState<OrderRow | null>(null);
   const [viewItems, setViewItems] = useState<OrderItemRow[]>([]);
   const [editOpen, setEditOpen] = useState(false);
+  const [invoiceMode, setInvoiceMode] = useState(false);
 
   // Order form state (create)
   const [phone, setPhone] = useState("");
