@@ -403,18 +403,26 @@ export default function Orders() {
         )}
       </div>
 
+      {/* Glass Search Bar */}
+      <div className="mb-6">
+        <GlassSearchBar
+          placeholder="Search by invoice, name, or phone..."
+          value={search}
+          onChange={setSearch}
+          sortOptions={[
+            { label: "Date", value: "created_at" },
+            { label: "Invoice", value: "invoice" },
+          ]}
+          sortValue={sortBy}
+          sortDirection={sortDirection}
+          onSortChange={setSortBy}
+          onSortDirectionChange={setSortDirection}
+        />
+      </div>
+
       <Card className="glass-card">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative max-w-sm flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by invoice, name, or phone..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-background/50 border-border text-card-foreground"
-              />
-            </div>
+        <CardContent className="pt-6">
+          <div className="flex justify-end mb-4">
             <Button
               variant="outline"
               size="sm"
@@ -424,8 +432,6 @@ export default function Orders() {
               {showDeleted ? "Hide Deleted" : "Show Deleted"}
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-12">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-secondary border-t-transparent" />
