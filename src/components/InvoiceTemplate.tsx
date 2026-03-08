@@ -159,6 +159,14 @@ export const InvoiceTemplate = forwardRef<HTMLDivElement, { data: InvoiceData }>
           </div>
         )}
 
+        {/* QR Code */}
+        {data.invoice_url && (
+          <div style={{ textAlign: "center", marginTop: "10px" }}>
+            <QRCodeSVG value={data.invoice_url} size={64} level="M" />
+            <div style={{ fontSize: "8px", color: "#999", marginTop: "2px" }}>Scan for digital copy</div>
+          </div>
+        )}
+
         {/* Footer */}
         <div style={{ textAlign: "center", marginTop: "14px", paddingTop: "8px", borderTop: "1px dashed #ccc", fontSize: "9px", color: "#999" }}>
           Thank you for your business!
