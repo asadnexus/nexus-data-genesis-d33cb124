@@ -42,6 +42,7 @@ interface OrderRow {
   tracking_code: string | null;
   created_at: string;
   deleted_at: string | null;
+  invoice_url: string | null;
   created_by: string;
 }
 
