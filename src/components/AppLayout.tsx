@@ -9,6 +9,7 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["main_admin", "sub_admin", "moderator"] },
   { to: "/products", label: "Products", icon: Package, roles: ["main_admin", "sub_admin", "moderator"] },
   { to: "/customers", label: "Customers", icon: Users, roles: ["main_admin", "sub_admin", "moderator"] },
+  { to: "/orders", label: "Orders", icon: ShoppingCart, roles: ["main_admin", "sub_admin", "moderator"] },
   { to: "/users", label: "Users", icon: UserCog, roles: ["main_admin"] },
 ];
 
