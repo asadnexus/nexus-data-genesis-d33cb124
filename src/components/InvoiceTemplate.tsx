@@ -32,6 +32,7 @@ interface InvoiceData {
   created_at: string;
   items: InvoiceItem[];
   company: CompanyInfo;
+  invoice_url?: string | null;
 }
 
 export const InvoiceTemplate = forwardRef<HTMLDivElement, { data: InvoiceData }>(
