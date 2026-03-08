@@ -74,8 +74,10 @@ export default function Signup() {
     setLoading(true);
     const fullPhone = `${countryCode}${form.phone}`;
 
+    const normalizedEmail = form.email.trim().toLowerCase();
+
     const { error } = await supabase.auth.signUp({
-      email: form.email,
+      email: normalizedEmail,
       password: form.password,
       options: {
         data: { name: form.name, phone: fullPhone },
