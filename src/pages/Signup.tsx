@@ -127,7 +127,7 @@ export default function Signup() {
                   <select
                     value={countryCode}
                     onChange={(e) => setCountryCode(e.target.value)}
-                    className="rounded-md border border-border bg-background/50 px-2 py-2 text-sm text-card-foreground"
+                    className="w-28 shrink-0 rounded-md border border-border bg-background/50 px-2 py-2 text-sm text-card-foreground"
                   >
                     {countryCodes.map((c) => (
                       <option key={c.code} value={c.code}>{c.country} {c.code}</option>
