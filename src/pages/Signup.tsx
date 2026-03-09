@@ -70,12 +70,11 @@ export default function Signup() {
         setInviteValid(false);
         return;
       }
-      const inv = data as any;
-      if (inv.used_by || new Date(inv.expires_at) < new Date()) {
+      if (data.used_by || new Date(data.expires_at) < new Date()) {
         setInviteValid(false);
         return;
       }
-      setInviteRole(inv.role === "sub_admin" ? "Sub Admin" : inv.role === "moderator" ? "Moderator" : inv.role);
+      setInviteRole(data.role === "sub_admin" ? "Sub Admin" : data.role === "moderator" ? "Moderator" : data.role);
       setInviteValid(true);
     })();
   }, [inviteToken]);
