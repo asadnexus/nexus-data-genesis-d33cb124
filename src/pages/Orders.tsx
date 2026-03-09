@@ -420,7 +420,7 @@ export default function Orders() {
     onSuccess: ({ id, invoice_code }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Order restored" });
-      log("restored", "order", id, { invoice_code });
+      
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });

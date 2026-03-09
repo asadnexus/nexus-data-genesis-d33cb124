@@ -134,7 +134,7 @@ export default function Products() {
     onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Product restored" });
-      log("restored", "product", product.id, { name: product.name, code: product.code });
+      
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
