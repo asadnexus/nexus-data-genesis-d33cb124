@@ -309,7 +309,7 @@ export default function Orders() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["products-active"] });
       toast({ title: "Order created", description: `Invoice ${invoiceCode}` });
-      log("created", "order", orderId as string, { invoice_code: invoiceCode, customer: customerName });
+      
       setDialogOpen(false);
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
