@@ -96,7 +96,7 @@ export default function Customers() {
     onSuccess: ({ id, values }) => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast({ title: "Customer updated" });
-      log("updated", "customer", id, { name: values.name });
+      
       closeDialog();
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
