@@ -179,7 +179,7 @@ export default function UsersManagement() {
                           {u.role !== "main_admin" && (
                             <Switch
                               checked={u.is_active}
-                              onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: u.id, is_active: checked })}
+                              onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: u.id, is_active: checked, user_name: u.name })}
                             />
                           )}
                         </TableCell>
