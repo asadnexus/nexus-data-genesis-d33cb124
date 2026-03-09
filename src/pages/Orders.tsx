@@ -79,6 +79,7 @@ export default function Orders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { settings: companySettings } = useCompanySettings();
+  const { settings: invoiceSettings } = useInvoiceSettings();
   const invoiceRef = useRef<HTMLDivElement>(null);
   const customerReceiptRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
