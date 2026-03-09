@@ -122,6 +122,107 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_settings: {
+        Row: {
+          accent_color: string
+          background_color: string
+          border_color: string
+          created_at: string
+          created_by: string
+          header_color: string
+          id: string
+          is_active: boolean
+          primary_color: string
+          secondary_color: string
+          text_color: string
+          updated_at: string
+          use_background_image: boolean
+        }
+        Insert: {
+          accent_color?: string
+          background_color?: string
+          border_color?: string
+          created_at?: string
+          created_by: string
+          header_color?: string
+          id?: string
+          is_active?: boolean
+          primary_color?: string
+          secondary_color?: string
+          text_color?: string
+          updated_at?: string
+          use_background_image?: boolean
+        }
+        Update: {
+          accent_color?: string
+          background_color?: string
+          border_color?: string
+          created_at?: string
+          created_by?: string
+          header_color?: string
+          id?: string
+          is_active?: boolean
+          primary_color?: string
+          secondary_color?: string
+          text_color?: string
+          updated_at?: string
+          use_background_image?: boolean
+        }
+        Relationships: []
+      }
+      invoice_settings_history: {
+        Row: {
+          accent_color: string
+          background_color: string
+          border_color: string
+          created_at: string
+          header_color: string
+          id: string
+          primary_color: string
+          secondary_color: string
+          settings_id: string
+          text_color: string
+          use_background_image: boolean
+          version_number: number
+        }
+        Insert: {
+          accent_color: string
+          background_color: string
+          border_color: string
+          created_at?: string
+          header_color: string
+          id?: string
+          primary_color: string
+          secondary_color: string
+          settings_id: string
+          text_color: string
+          use_background_image: boolean
+          version_number: number
+        }
+        Update: {
+          accent_color?: string
+          background_color?: string
+          border_color?: string
+          created_at?: string
+          header_color?: string
+          id?: string
+          primary_color?: string
+          secondary_color?: string
+          settings_id?: string
+          text_color?: string
+          use_background_image?: boolean
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_settings_history_settings_id_fkey"
+            columns: ["settings_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -380,6 +481,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      save_invoice_settings_version: {
+        Args: { p_settings_id: string }
+        Returns: undefined
       }
     }
     Enums: {
