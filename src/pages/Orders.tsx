@@ -490,10 +490,10 @@ export default function Orders() {
                       <TableCell className="text-right">{Number(o.advance).toLocaleString()}</TableCell>
                       <TableCell className="text-right">{Number(o.cod).toLocaleString()}</TableCell>
                       <TableCell>
-                        {canEdit && !o.deleted_at ? (
+                        {canCreate && !o.deleted_at ? (
                           <Select
                             value={o.status || "Pending"}
-                            onValueChange={(v) => statusMutation.mutate({ id: o.id, status: v })}
+                            onValueChange={(v) => statusMutation.mutate({ id: o.id, status: v, invoice_code: o.invoice_code })}
                           >
                             <SelectTrigger className={`h-7 w-[120px] text-xs border ${statusColor(o.status)}`}>
                               <SelectValue />
