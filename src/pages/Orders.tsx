@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMyPermissions } from "@/hooks/usePermissions";
+import { useActivityLog } from "@/hooks/useActivityLog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,7 +77,9 @@ function statusColor(status: string | null): string {
 }
 
 export default function Orders() {
-  const { user, role } = useAuth();
+  const { user } = useAuth();
+  const { permissions } = useMyPermissions();
+  const { log } = useActivityLog();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { settings: companySettings } = useCompanySettings();
@@ -116,7 +120,10 @@ export default function Orders() {
   const [editTrackingCode, setEditTrackingCode] = useState("");
   const [editCourier, setEditCourier] = useState("");
 
-  const canEdit = role === "main_admin" || role === "sub_admin";
+  const canCreate = permissions.can_create_orders;
+  const canDelete = permissions.can_delete_orders;
+  const canRestore = permissions.can_restore_deleted;
+  const canPrint = permissions.can_print_invoice;
 
   // Fetch orders
   const { data: orders = [], isLoading } = useQuery({
@@ -293,11 +300,12 @@ export default function Orders() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (orderId) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["products-active"] });
       toast({ title: "Order created", description: `Invoice ${invoiceCode}` });
+      log("created", "order", orderId as string, { invoice_code: invoiceCode, customer: customerName });
       setDialogOpen(false);
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -326,14 +334,16 @@ export default function Orders() {
         })
         .eq("id", editOrder.id);
       if (error) throw error;
+      return editOrder;
     },
-    onSuccess: () => {
+    onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Order updated" });
+      log("updated", "order", order.id, { invoice_code: order.invoice_code });
       setEditOpen(false);
       setEditOrder(null);
       // Refresh view if open
-      if (viewOrder && viewOrder.id === editOrder?.id) {
+      if (viewOrder && viewOrder.id === order.id) {
         setViewOrder(null);
       }
     },
@@ -352,13 +362,15 @@ export default function Orders() {
 
   // Quick status change
   const statusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status, invoice_code }: { id: string; status: string; invoice_code: string }) => {
       const { error } = await supabase.from("orders").update({ status }).eq("id", id);
       if (error) throw error;
+      return { id, status, invoice_code };
     },
-    onSuccess: () => {
+    onSuccess: ({ id, status, invoice_code }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Status updated" });
+      log("status_changed", "order", id, { invoice_code, status });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -375,32 +387,36 @@ export default function Orders() {
 
   // Soft delete order
   const softDeleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, invoice_code }: { id: string; invoice_code: string }) => {
       const { error } = await supabase
         .from("orders")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      return { id, invoice_code };
     },
-    onSuccess: () => {
+    onSuccess: ({ id, invoice_code }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Order deleted" });
+      log("deleted", "order", id, { invoice_code });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   // Restore order
   const restoreMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, invoice_code }: { id: string; invoice_code: string }) => {
       const { error } = await supabase
         .from("orders")
         .update({ deleted_at: null })
         .eq("id", id);
       if (error) throw error;
+      return { id, invoice_code };
     },
-    onSuccess: () => {
+    onSuccess: ({ id, invoice_code }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Order restored" });
+      log("restored", "order", id, { invoice_code });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -412,7 +428,7 @@ export default function Orders() {
           <h1 className="text-2xl font-bold text-foreground">Orders</h1>
           <p className="text-muted-foreground">Manage orders and invoices</p>
         </div>
-        {canEdit && (
+        {canCreate && (
           <Button onClick={openCreate} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
             <Plus className="mr-2 h-4 w-4" /> New Order
           </Button>
@@ -483,10 +499,10 @@ export default function Orders() {
                       <TableCell className="text-right">{Number(o.advance).toLocaleString()}</TableCell>
                       <TableCell className="text-right">{Number(o.cod).toLocaleString()}</TableCell>
                       <TableCell>
-                        {canEdit && !o.deleted_at ? (
+                        {canCreate && !o.deleted_at ? (
                           <Select
                             value={o.status || "Pending"}
-                            onValueChange={(v) => statusMutation.mutate({ id: o.id, status: v })}
+                            onValueChange={(v) => statusMutation.mutate({ id: o.id, status: v, invoice_code: o.invoice_code })}
                           >
                             <SelectTrigger className={`h-7 w-[120px] text-xs border ${statusColor(o.status)}`}>
                               <SelectValue />
@@ -511,28 +527,30 @@ export default function Orders() {
                           <Button size="icon" variant="ghost" onClick={() => openViewOrder(o)} title="View">
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {canEdit && !o.deleted_at && (
+                          {canCreate && !o.deleted_at && (
                             <>
                               <Button size="icon" variant="ghost" onClick={() => openEdit(o)} title="Edit">
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => softDeleteMutation.mutate(o.id)}
-                                className="text-destructive hover:text-destructive"
-                                title="Delete"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {canDelete && (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => softDeleteMutation.mutate({ id: o.id, invoice_code: o.invoice_code })}
+                                  className="text-destructive hover:text-destructive"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </>
                           )}
-                          {canEdit && o.deleted_at && (
+                          {canRestore && o.deleted_at && (
                             <Button
                               size="icon"
                               variant="ghost"
-                              onClick={() => restoreMutation.mutate(o.id)}
-                              className="text-green-500 hover:text-green-400"
+                              onClick={() => restoreMutation.mutate({ id: o.id, invoice_code: o.invoice_code })}
+                              className="text-success hover:text-success/80"
                               title="Restore"
                             >
                               <RotateCcw className="h-4 w-4" />

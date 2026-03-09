@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMyPermissions } from "@/hooks/usePermissions";
+import { useActivityLog } from "@/hooks/useActivityLog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +20,9 @@ import type { Tables } from "@/integrations/supabase/types";
 type Product = Tables<"products">;
 
 export default function Products() {
-  const { user, role } = useAuth();
+  const { user } = useAuth();
+  const { permissions } = useMyPermissions();
+  const { log } = useActivityLog();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -29,7 +33,8 @@ export default function Products() {
   const [sortBy, setSortBy] = useState("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  const canEdit = role === "main_admin" || role === "sub_admin";
+  const canEdit = permissions.can_edit_products;
+  const canRestore = permissions.can_restore_deleted;
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products", showDeleted],
@@ -49,37 +54,38 @@ export default function Products() {
         p.code.toLowerCase().includes(search.toLowerCase())
     );
 
-    filtered.sort((a, b) => {
-      let cmp = 0;
+    return [...filtered].sort((a, b) => {
       if (sortBy === "stock") {
-        cmp = a.stock - b.stock;
-      } else if (sortBy === "code") {
-        cmp = a.code.localeCompare(b.code);
-      } else {
-        cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        return sortDirection === "asc" ? a.stock - b.stock : b.stock - a.stock;
       }
-      return sortDirection === "asc" ? cmp : -cmp;
+      if (sortBy === "code") {
+        return sortDirection === "asc" ? a.code.localeCompare(b.code) : b.code.localeCompare(a.code);
+      }
+      // Default: created_at
+      return sortDirection === "asc"
+        ? new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        : new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-
-    return filtered;
   }, [products, search, sortBy, sortDirection]);
 
   const createMutation = useMutation({
     mutationFn: async (values: typeof form) => {
       const { data: code } = await supabase.rpc("generate_product_code");
-      const { error } = await supabase.from("products").insert({
+      const { data, error } = await supabase.from("products").insert({
         code: code!,
         name: values.name,
         price: parseFloat(values.price) || 0,
         stock: parseInt(values.stock) || 0,
         description: values.description || null,
         created_by: user!.id,
-      });
+      }).select().single();
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Product created" });
+      log("created", "product", data.id, { name: data.name, code: data.code });
       closeDialog();
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -94,35 +100,41 @@ export default function Products() {
         description: values.description || null,
       }).eq("id", id);
       if (error) throw error;
+      return { id, values };
     },
-    onSuccess: () => {
+    onSuccess: ({ id, values }) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Product updated" });
+      log("updated", "product", id, { name: values.name });
       closeDialog();
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const softDeleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("products").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    mutationFn: async (product: Product) => {
+      const { error } = await supabase.from("products").update({ deleted_at: new Date().toISOString() }).eq("id", product.id);
       if (error) throw error;
+      return product;
     },
-    onSuccess: () => {
+    onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Product deleted" });
+      log("deleted", "product", product.id, { name: product.name, code: product.code });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const restoreMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("products").update({ deleted_at: null }).eq("id", id);
+    mutationFn: async (product: Product) => {
+      const { error } = await supabase.from("products").update({ deleted_at: null }).eq("id", product.id);
       if (error) throw error;
+      return product;
     },
-    onSuccess: () => {
+    onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Product restored" });
+      log("restored", "product", product.id, { name: product.name, code: product.code });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -165,7 +177,6 @@ export default function Products() {
         )}
       </div>
 
-      {/* Glass Search Bar */}
       <div className="mb-6">
         <GlassSearchBar
           placeholder="Search by product name or code..."
@@ -210,7 +221,7 @@ export default function Products() {
                     <TableHead className="text-right">Price</TableHead>
                     <TableHead className="text-right">Stock</TableHead>
                     <TableHead>Status</TableHead>
-                    {canEdit && <TableHead className="text-right">Actions</TableHead>}
+                    {(canEdit || canRestore) && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -235,22 +246,26 @@ export default function Products() {
                           <Badge className="bg-success text-success-foreground">Active</Badge>
                         )}
                       </TableCell>
-                      {canEdit && (
+                      {(canEdit || canRestore) && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             {p.deleted_at ? (
-                              <Button size="icon" variant="ghost" onClick={() => restoreMutation.mutate(p.id)} title="Restore">
-                                <RotateCcw className="h-4 w-4" />
-                              </Button>
+                              canRestore && (
+                                <Button size="icon" variant="ghost" onClick={() => restoreMutation.mutate(p)} title="Restore">
+                                  <RotateCcw className="h-4 w-4" />
+                                </Button>
+                              )
                             ) : (
-                              <>
-                                <Button size="icon" variant="ghost" onClick={() => openEdit(p)} title="Edit">
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button size="icon" variant="ghost" onClick={() => softDeleteMutation.mutate(p.id)} title="Delete" className="text-destructive hover:text-destructive">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
+                              canEdit && (
+                                <>
+                                  <Button size="icon" variant="ghost" onClick={() => openEdit(p)} title="Edit">
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" onClick={() => softDeleteMutation.mutate(p)} title="Delete" className="text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )
                             )}
                           </div>
                         </TableCell>

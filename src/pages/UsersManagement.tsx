@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActivityLog } from "@/hooks/useActivityLog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,7 @@ type UserProfile = Tables<"users"> & { role?: Enums<"app_role"> };
 
 export default function UsersManagement() {
   const { user, role: myRole } = useAuth();
+  const { log } = useActivityLog();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -55,23 +57,27 @@ export default function UsersManagement() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      return { ...values, user_id: data.user_id };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["users-management"] });
       toast({ title: "User created", description: "The user can now log in immediately." });
+      log("created", "user", result.user_id, { name: result.name, email: result.email, role: result.role });
       setDialogOpen(false);
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const toggleActiveMutation = useMutation({
-    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+    mutationFn: async ({ id, is_active, user_name }: { id: string; is_active: boolean; user_name: string }) => {
       const { error } = await supabase.from("users").update({ is_active }).eq("id", id);
       if (error) throw error;
+      return { id, is_active, user_name };
     },
-    onSuccess: () => {
+    onSuccess: ({ id, is_active, user_name }) => {
       queryClient.invalidateQueries({ queryKey: ["users-management"] });
       toast({ title: "User status updated" });
+      log(is_active ? "activated" : "deactivated", "user", id, { name: user_name });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -173,7 +179,7 @@ export default function UsersManagement() {
                           {u.role !== "main_admin" && (
                             <Switch
                               checked={u.is_active}
-                              onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: u.id, is_active: checked })}
+                              onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: u.id, is_active: checked, user_name: u.name })}
                             />
                           )}
                         </TableCell>
