@@ -22,7 +22,7 @@ type Product = Tables<"products">;
 export default function Products() {
   const { user } = useAuth();
   const { permissions } = useMyPermissions();
-  const { log } = useActivityLog();
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
