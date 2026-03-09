@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { z } from "zod";
 
 const signupSchema = z.object({
@@ -46,6 +47,38 @@ export default function Signup() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get("invite");
+
+  // Validate invite token and show role
+  const [inviteRole, setInviteRole] = useState<string | null>(null);
+  const [inviteValid, setInviteValid] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!inviteToken) {
+      // No invite token - this is the initial main_admin signup (allowed)
+      return;
+    }
+    // Validate invite token
+    (async () => {
+      const { data, error } = await supabase
+        .from("invitations" as any)
+        .select("role, used_by, expires_at")
+        .eq("token", inviteToken)
+        .single();
+      if (error || !data) {
+        setInviteValid(false);
+        return;
+      }
+      const inv = data as any;
+      if (inv.used_by || new Date(inv.expires_at) < new Date()) {
+        setInviteValid(false);
+        return;
+      }
+      setInviteRole(inv.role === "sub_admin" ? "Sub Admin" : inv.role === "moderator" ? "Moderator" : inv.role);
+      setInviteValid(true);
+    })();
+  }, [inviteToken]);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -55,6 +88,12 @@ export default function Signup() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+
+    // If there's an invite token, it must be valid
+    if (inviteToken && inviteValid === false) {
+      toast({ title: "Invalid invite", description: "This invite link is invalid or expired.", variant: "destructive" });
+      return;
+    }
 
     const result = signupSchema.safeParse(form);
     if (!result.success) {
@@ -73,25 +112,66 @@ export default function Signup() {
 
     setLoading(true);
     const fullPhone = `${countryCode}${form.phone}`;
-
     const normalizedEmail = form.email.trim().toLowerCase();
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email: normalizedEmail,
       password: form.password,
       options: {
-        data: { name: form.name, phone: fullPhone },
+        data: { name: form.name, phone: fullPhone, invite_token: inviteToken || undefined },
         emailRedirectTo: window.location.origin,
       },
     });
 
     if (error) {
       toast({ title: "Signup failed", description: error.message, variant: "destructive" });
-    } else {
-      navigate("/verify-email", { state: { email: normalizedEmail } });
+      setLoading(false);
+      return;
     }
+
+    // If invite token exists, call the accept-invite edge function
+    if (inviteToken && signUpData.user) {
+      const { data: acceptData, error: acceptError } = await supabase.functions.invoke("accept-invite", {
+        body: { token: inviteToken, auth_user_id: signUpData.user.id },
+      });
+      if (acceptError || acceptData?.error) {
+        toast({
+          title: "Invite processing failed",
+          description: acceptData?.error || acceptError?.message || "Could not process invite. Contact admin.",
+          variant: "destructive",
+        });
+      }
+    }
+
+    navigate("/verify-email", { state: { email: normalizedEmail } });
     setLoading(false);
   };
+
+  // Show error if invite is invalid
+  if (inviteToken && inviteValid === false) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
+        <Card className="glass-card w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl text-destructive">Invalid Invite Link</CardTitle>
+            <CardDescription>This invite link is invalid, expired, or has already been used.</CardDescription>
+          </CardHeader>
+          <CardFooter className="justify-center">
+            <Link to="/login" className="text-secondary hover:underline font-medium">Back to login</Link>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show loading while validating invite
+  if (inviteToken && inviteValid === null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-secondary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
@@ -102,6 +182,11 @@ export default function Signup() {
           </div>
           <h1 className="text-3xl font-bold text-foreground">Create Account</h1>
           <p className="mt-2 text-muted-foreground">Get started with Nexus AI</p>
+          {inviteRole && (
+            <Badge className="mt-3 bg-secondary text-secondary-foreground text-sm px-3 py-1">
+              You are signing up as: {inviteRole}
+            </Badge>
+          )}
         </div>
 
         <Card className="glass-card">
