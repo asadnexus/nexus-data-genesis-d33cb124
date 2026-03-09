@@ -300,11 +300,12 @@ export default function Orders() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (orderId) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["products-active"] });
       toast({ title: "Order created", description: `Invoice ${invoiceCode}` });
+      log("created", "order", orderId as string, { invoice_code: invoiceCode, customer: customerName });
       setDialogOpen(false);
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -333,14 +334,16 @@ export default function Orders() {
         })
         .eq("id", editOrder.id);
       if (error) throw error;
+      return editOrder;
     },
-    onSuccess: () => {
+    onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Order updated" });
+      log("updated", "order", order.id, { invoice_code: order.invoice_code });
       setEditOpen(false);
       setEditOrder(null);
       // Refresh view if open
-      if (viewOrder && viewOrder.id === editOrder?.id) {
+      if (viewOrder && viewOrder.id === order.id) {
         setViewOrder(null);
       }
     },
