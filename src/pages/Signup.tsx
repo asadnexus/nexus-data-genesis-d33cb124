@@ -62,7 +62,7 @@ export default function Signup() {
     // Validate invite token
     (async () => {
       const { data, error } = await supabase
-        .from("invitations" as any)
+        .from("invitations")
         .select("role, used_by, expires_at")
         .eq("token", inviteToken)
         .single();
