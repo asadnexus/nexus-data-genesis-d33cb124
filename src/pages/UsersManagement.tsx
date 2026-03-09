@@ -45,6 +45,15 @@ export default function UsersManagement() {
     },
   });
 
+  const { data: invitations = [], isLoading: invitationsLoading } = useQuery({
+    queryKey: ["invitations"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("invitations").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Invitation[];
+    },
+  });
+
   const filtered = users.filter(
     (u) =>
       u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -55,12 +64,12 @@ export default function UsersManagement() {
   const createInviteMutation = useMutation({
     mutationFn: async (role: Enums<"app_role">) => {
       const { data, error } = await supabase
-        .from("invitations" as any)
-        .insert({ role, created_by: user!.id } as any)
+        .from("invitations")
+        .insert({ role, created_by: user!.id })
         .select("token")
         .single();
       if (error) throw error;
-      return (data as any).token as string;
+      return data.token as string;
     },
     onSuccess: (token) => {
       const link = `${window.location.origin}/signup?invite=${token}`;
@@ -124,6 +133,21 @@ export default function UsersManagement() {
     setExpandedUser((prev) => (prev === authId ? null : authId));
   };
 
+  const getInviteStatus = (inv: Invitation) => {
+    if (inv.used_by) return "used";
+    if (new Date(inv.expires_at) < new Date()) return "expired";
+    return "pending";
+  };
+
+  const inviteStatusBadge = (status: string) => {
+    switch (status) {
+      case "used": return <Badge className="bg-success text-success-foreground"><CheckCircle className="mr-1 h-3 w-3" />Used</Badge>;
+      case "expired": return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Expired</Badge>;
+      case "pending": return <Badge className="bg-accent text-accent-foreground"><Clock className="mr-1 h-3 w-3" />Pending</Badge>;
+      default: return null;
+    }
+  };
+
   return (
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -136,77 +160,140 @@ export default function UsersManagement() {
         </Button>
       </div>
 
-      <Card className="glass-card">
-        <CardHeader className="pb-4">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-background/50 border-border text-card-foreground" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-secondary border-t-transparent" /></div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <UserCog className="mb-4 h-12 w-12" /><p>No users found</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-8"></TableHead>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Active</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((u) => (
-                    <>
-                      <TableRow key={u.id}>
-                        <TableCell>
-                          {canToggle(u.role) && (
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleExpand(u.auth_id)}>
-                              {expandedUser === u.auth_id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                            </Button>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{u.user_code}</TableCell>
-                        <TableCell className="font-medium">{u.name}</TableCell>
-                        <TableCell>{u.email}</TableCell>
-                        <TableCell><Badge className={roleBadgeClass(u.role)}>{roleLabel(u.role)}</Badge></TableCell>
-                        <TableCell>
-                          {u.is_active ? <Badge className="bg-success text-success-foreground">Active</Badge> : <Badge variant="destructive">Inactive</Badge>}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {u.role !== "main_admin" && (
-                            <Switch
-                              checked={u.is_active}
-                              onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: u.id, is_active: checked, user_name: u.name })}
-                            />
-                          )}
-                        </TableCell>
+      <Tabs defaultValue="users" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="users">Team Members</TabsTrigger>
+          <TabsTrigger value="invitations">Invitation History</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users">
+          <Card className="glass-card">
+            <CardHeader className="pb-4">
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-background/50 border-border text-card-foreground" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-secondary border-t-transparent" /></div>
+              ) : filtered.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <UserCog className="mb-4 h-12 w-12" /><p>No users found</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-8"></TableHead>
+                        <TableHead>Code</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Active</TableHead>
                       </TableRow>
-                      {expandedUser === u.auth_id && canToggle(u.role) && (
-                        <TableRow key={`${u.id}-perms`}>
-                          <TableCell colSpan={7} className="bg-muted/30 px-8 py-4">
-                            <p className="text-sm font-semibold mb-3">Permissions for {u.name}</p>
-                            <PermissionToggles userId={u.auth_id} userRole={u.role || ""} />
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {filtered.map((u) => (
+                        <>
+                          <TableRow key={u.id}>
+                            <TableCell>
+                              {canToggle(u.role) && (
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleExpand(u.auth_id)}>
+                                  {expandedUser === u.auth_id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                </Button>
+                              )}
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">{u.user_code}</TableCell>
+                            <TableCell className="font-medium">{u.name}</TableCell>
+                            <TableCell>{u.email}</TableCell>
+                            <TableCell><Badge className={roleBadgeClass(u.role)}>{roleLabel(u.role)}</Badge></TableCell>
+                            <TableCell>
+                              {u.is_active ? <Badge className="bg-success text-success-foreground">Active</Badge> : <Badge variant="destructive">Inactive</Badge>}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {u.role !== "main_admin" && (
+                                <Switch
+                                  checked={u.is_active}
+                                  onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: u.id, is_active: checked, user_name: u.name })}
+                                />
+                              )}
+                            </TableCell>
+                          </TableRow>
+                          {expandedUser === u.auth_id && canToggle(u.role) && (
+                            <TableRow key={`${u.id}-perms`}>
+                              <TableCell colSpan={7} className="bg-muted/30 px-8 py-4">
+                                <p className="text-sm font-semibold mb-3">Permissions for {u.name}</p>
+                                <PermissionToggles userId={u.auth_id} userRole={u.role || ""} />
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="invitations">
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="text-lg">Invitation History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {invitationsLoading ? (
+                <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-secondary border-t-transparent" /></div>
+              ) : invitations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <LinkIcon className="mb-4 h-12 w-12" /><p>No invitations generated yet</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead>Expires</TableHead>
+                        <TableHead>Invite Link</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invitations.map((inv) => {
+                        const status = getInviteStatus(inv);
+                        const link = `${window.location.origin}/signup?invite=${inv.token}`;
+                        return (
+                          <TableRow key={inv.id}>
+                            <TableCell><Badge className={roleBadgeClass(inv.role)}>{roleLabel(inv.role)}</Badge></TableCell>
+                            <TableCell>{inviteStatusBadge(status)}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{format(new Date(inv.created_at), "dd MMM yyyy, hh:mm a")}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{format(new Date(inv.expires_at), "dd MMM yyyy, hh:mm a")}</TableCell>
+                            <TableCell>
+                              {status === "pending" ? (
+                                <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(link); toast({ title: "Link copied" }); }}>
+                                  <Copy className="mr-1 h-3 w-3" /> Copy
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-background border-border">
