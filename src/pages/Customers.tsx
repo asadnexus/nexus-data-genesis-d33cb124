@@ -22,7 +22,7 @@ type Customer = Tables<"customers">;
 export default function Customers() {
   const { user } = useAuth();
   const { permissions } = useMyPermissions();
-  const { log } = useActivityLog();
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
