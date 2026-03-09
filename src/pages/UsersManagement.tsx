@@ -11,18 +11,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, UserCog } from "lucide-react";
+import { Plus, Search, UserCog, ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { PermissionToggles } from "@/components/PermissionToggles";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 
 type UserProfile = Tables<"users"> & { role?: Enums<"app_role"> };
 
 export default function UsersManagement() {
-  const { user } = useAuth();
+  const { user, role: myRole } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", role: "sub_admin" as Enums<"app_role"> });
 
   const { data: users = [], isLoading } = useQuery({
@@ -30,10 +32,8 @@ export default function UsersManagement() {
     queryFn: async () => {
       const { data: usersData, error } = await supabase.from("users").select("*").order("created_at", { ascending: false });
       if (error) throw error;
-
       const { data: rolesData } = await supabase.from("user_roles").select("*");
       const rolesMap = new Map(rolesData?.map((r) => [r.user_id, r.role]));
-
       return (usersData as Tables<"users">[]).map((u) => ({
         ...u,
         role: rolesMap.get(u.auth_id),
@@ -51,13 +51,7 @@ export default function UsersManagement() {
   const createUserMutation = useMutation({
     mutationFn: async (values: typeof form) => {
       const { data, error } = await supabase.functions.invoke("admin-create-user", {
-        body: {
-          name: values.name,
-          email: values.email,
-          phone: values.phone || null,
-          password: values.password,
-          role: values.role,
-        },
+        body: { name: values.name, email: values.email, phone: values.phone || null, password: values.password, role: values.role },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -106,6 +100,17 @@ export default function UsersManagement() {
     }
   };
 
+  // Can toggle permissions for: moderators (any admin/sub_admin), sub_admins (only main_admin)
+  const canToggle = (targetRole?: string) => {
+    if (targetRole === "moderator") return myRole === "main_admin" || myRole === "sub_admin";
+    if (targetRole === "sub_admin") return myRole === "main_admin";
+    return false;
+  };
+
+  const toggleExpand = (authId: string) => {
+    setExpandedUser((prev) => (prev === authId ? null : authId));
+  };
+
   return (
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -137,6 +142,7 @@ export default function UsersManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-8"></TableHead>
                     <TableHead>Code</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
@@ -147,23 +153,40 @@ export default function UsersManagement() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-mono text-sm">{u.user_code}</TableCell>
-                      <TableCell className="font-medium">{u.name}</TableCell>
-                      <TableCell>{u.email}</TableCell>
-                      <TableCell><Badge className={roleBadgeClass(u.role)}>{roleLabel(u.role)}</Badge></TableCell>
-                      <TableCell>
-                        {u.is_active ? <Badge className="bg-success text-success-foreground">Active</Badge> : <Badge variant="destructive">Inactive</Badge>}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {u.role !== "main_admin" && (
-                          <Switch
-                            checked={u.is_active}
-                            onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: u.id, is_active: checked })}
-                          />
-                        )}
-                      </TableCell>
-                    </TableRow>
+                    <>
+                      <TableRow key={u.id}>
+                        <TableCell>
+                          {canToggle(u.role) && (
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleExpand(u.auth_id)}>
+                              {expandedUser === u.auth_id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            </Button>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">{u.user_code}</TableCell>
+                        <TableCell className="font-medium">{u.name}</TableCell>
+                        <TableCell>{u.email}</TableCell>
+                        <TableCell><Badge className={roleBadgeClass(u.role)}>{roleLabel(u.role)}</Badge></TableCell>
+                        <TableCell>
+                          {u.is_active ? <Badge className="bg-success text-success-foreground">Active</Badge> : <Badge variant="destructive">Inactive</Badge>}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {u.role !== "main_admin" && (
+                            <Switch
+                              checked={u.is_active}
+                              onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: u.id, is_active: checked })}
+                            />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      {expandedUser === u.auth_id && canToggle(u.role) && (
+                        <TableRow key={`${u.id}-perms`}>
+                          <TableCell colSpan={7} className="bg-muted/30 px-8 py-4">
+                            <p className="text-sm font-semibold mb-3">Permissions for {u.name}</p>
+                            <PermissionToggles userId={u.auth_id} userRole={u.role || ""} />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   ))}
                 </TableBody>
               </Table>
@@ -195,9 +218,7 @@ export default function UsersManagement() {
             <div className="space-y-2">
               <Label>Role</Label>
               <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as Enums<"app_role"> })}>
-                <SelectTrigger className="bg-background/50 border-border">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="bg-background/50 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="sub_admin">Sub Admin</SelectItem>
                   <SelectItem value="moderator">Moderator</SelectItem>
