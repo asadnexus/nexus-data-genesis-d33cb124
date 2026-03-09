@@ -77,7 +77,9 @@ function statusColor(status: string | null): string {
 }
 
 export default function Orders() {
-  const { user, role } = useAuth();
+  const { user } = useAuth();
+  const { permissions } = useMyPermissions();
+  const { log } = useActivityLog();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { settings: companySettings } = useCompanySettings();
@@ -118,7 +120,10 @@ export default function Orders() {
   const [editTrackingCode, setEditTrackingCode] = useState("");
   const [editCourier, setEditCourier] = useState("");
 
-  const canEdit = role === "main_admin" || role === "sub_admin";
+  const canCreate = permissions.can_create_orders;
+  const canDelete = permissions.can_delete_orders;
+  const canRestore = permissions.can_restore_deleted;
+  const canPrint = permissions.can_print_invoice;
 
   // Fetch orders
   const { data: orders = [], isLoading } = useQuery({
