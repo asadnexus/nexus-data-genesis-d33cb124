@@ -419,7 +419,7 @@ export default function Orders() {
           <h1 className="text-2xl font-bold text-foreground">Orders</h1>
           <p className="text-muted-foreground">Manage orders and invoices</p>
         </div>
-        {canEdit && (
+        {canCreate && (
           <Button onClick={openCreate} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
             <Plus className="mr-2 h-4 w-4" /> New Order
           </Button>
