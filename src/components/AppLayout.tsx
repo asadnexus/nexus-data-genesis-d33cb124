@@ -1,22 +1,34 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Package, Users, UserCog, LayoutDashboard, LogOut, Menu, X, ShoppingCart, Settings, FileText } from "lucide-react";
+import { useMyPermissions } from "@/hooks/usePermissions";
+import { Package, Users, UserCog, LayoutDashboard, LogOut, Menu, X, ShoppingCart, Settings, FileText, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import type { PermissionKey } from "@/hooks/usePermissions";
 
-const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["main_admin", "sub_admin", "moderator"] },
-  { to: "/products", label: "Products", icon: Package, roles: ["main_admin", "sub_admin", "moderator"] },
-  { to: "/customers", label: "Customers", icon: Users, roles: ["main_admin", "sub_admin", "moderator"] },
-  { to: "/orders", label: "Orders", icon: ShoppingCart, roles: ["main_admin", "sub_admin", "moderator"] },
+interface NavItem {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  roles: string[];
+  permissionKey?: PermissionKey;
+}
+
+const navItems: NavItem[] = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["main_admin", "sub_admin", "moderator"], permissionKey: "can_view_dashboard" },
+  { to: "/products", label: "Products", icon: Package, roles: ["main_admin", "sub_admin", "moderator"], permissionKey: "can_view_products" },
+  { to: "/customers", label: "Customers", icon: Users, roles: ["main_admin", "sub_admin", "moderator"], permissionKey: "can_view_customers" },
+  { to: "/orders", label: "Orders", icon: ShoppingCart, roles: ["main_admin", "sub_admin", "moderator"], permissionKey: "can_view_orders" },
   { to: "/invoice-settings", label: "Invoice", icon: FileText, roles: ["main_admin", "sub_admin"] },
-  { to: "/settings", label: "Settings", icon: Settings, roles: ["main_admin", "sub_admin"] },
+  { to: "/settings", label: "Settings", icon: Settings, roles: ["main_admin", "sub_admin", "moderator"], permissionKey: "can_view_settings" },
+  { to: "/activity-logs", label: "Activity Logs", icon: Activity, roles: ["main_admin", "sub_admin", "moderator"], permissionKey: "can_view_activity_logs" },
   { to: "/users", label: "Users", icon: UserCog, roles: ["main_admin"] },
 ];
 
 export function AppLayout() {
   const { profile, role, signOut } = useAuth();
+  const { permissions } = useMyPermissions();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -25,16 +37,18 @@ export function AppLayout() {
     navigate("/login");
   };
 
-  const filteredNav = navItems.filter((item) => role && item.roles.includes(role));
+  const filteredNav = navItems.filter((item) => {
+    if (!role || !item.roles.includes(role)) return false;
+    if (item.permissionKey && !permissions[item.permissionKey]) return false;
+    return true;
+  });
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Sidebar */}
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[hsl(var(--sidebar-background))] border-r border-[hsl(var(--sidebar-border))] transition-transform lg:static lg:translate-x-0",
@@ -95,7 +109,6 @@ export function AppLayout() {
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="flex flex-1 flex-col">
         <header className="flex h-16 items-center gap-4 border-b border-border bg-background px-6 lg:px-8">
           <Button
