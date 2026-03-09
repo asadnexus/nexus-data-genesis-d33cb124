@@ -518,28 +518,30 @@ export default function Orders() {
                           <Button size="icon" variant="ghost" onClick={() => openViewOrder(o)} title="View">
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {canEdit && !o.deleted_at && (
+                          {canCreate && !o.deleted_at && (
                             <>
                               <Button size="icon" variant="ghost" onClick={() => openEdit(o)} title="Edit">
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => softDeleteMutation.mutate(o.id)}
-                                className="text-destructive hover:text-destructive"
-                                title="Delete"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {canDelete && (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => softDeleteMutation.mutate({ id: o.id, invoice_code: o.invoice_code })}
+                                  className="text-destructive hover:text-destructive"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </>
                           )}
-                          {canEdit && o.deleted_at && (
+                          {canRestore && o.deleted_at && (
                             <Button
                               size="icon"
                               variant="ghost"
-                              onClick={() => restoreMutation.mutate(o.id)}
-                              className="text-green-500 hover:text-green-400"
+                              onClick={() => restoreMutation.mutate({ id: o.id, invoice_code: o.invoice_code })}
+                              className="text-success hover:text-success/80"
                               title="Restore"
                             >
                               <RotateCcw className="h-4 w-4" />
