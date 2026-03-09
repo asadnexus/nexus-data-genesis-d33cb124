@@ -17,6 +17,7 @@ import Customers from "./pages/Customers";
 import UsersManagement from "./pages/UsersManagement";
 import Orders from "./pages/Orders";
 import Settings from "./pages/Settings";
+import InvoiceSettings from "./pages/InvoiceSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/customers" element={<Customers />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/settings" element={<ProtectedRoute requiredRole="sub_admin"><Settings /></ProtectedRoute>} />
+              <Route path="/invoice-settings" element={<ProtectedRoute requiredRole="sub_admin"><InvoiceSettings /></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute requiredRole="main_admin"><UsersManagement /></ProtectedRoute>} />
             </Route>
             <Route path="*" element={<NotFound />} />
