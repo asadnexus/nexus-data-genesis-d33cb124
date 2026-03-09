@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useActivityLog } from "@/hooks/useActivityLog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, UserCog, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Search, UserCog, ChevronDown, ChevronRight, Copy, Link as LinkIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PermissionToggles } from "@/components/PermissionToggles";
 import type { Tables, Enums } from "@/integrations/supabase/types";
@@ -21,13 +20,13 @@ type UserProfile = Tables<"users"> & { role?: Enums<"app_role"> };
 
 export default function UsersManagement() {
   const { user, role: myRole } = useAuth();
-  const { log } = useActivityLog();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", role: "sub_admin" as Enums<"app_role"> });
+  const [inviteRole, setInviteRole] = useState<Enums<"app_role">>("sub_admin");
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users-management"],
@@ -50,42 +49,48 @@ export default function UsersManagement() {
       u.user_code.toLowerCase().includes(search.toLowerCase())
   );
 
-  const createUserMutation = useMutation({
-    mutationFn: async (values: typeof form) => {
-      const { data, error } = await supabase.functions.invoke("admin-create-user", {
-        body: { name: values.name, email: values.email, phone: values.phone || null, password: values.password, role: values.role },
-      });
+  const createInviteMutation = useMutation({
+    mutationFn: async (role: Enums<"app_role">) => {
+      const { data, error } = await supabase
+        .from("invitations" as any)
+        .insert({ role, created_by: user!.id } as any)
+        .select("token")
+        .single();
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return { ...values, user_id: data.user_id };
+      return (data as any).token as string;
     },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["users-management"] });
-      toast({ title: "User created", description: "The user can now log in immediately." });
-      log("created", "user", result.user_id, { name: result.name, email: result.email, role: result.role });
-      setDialogOpen(false);
+    onSuccess: (token) => {
+      const link = `${window.location.origin}/signup?invite=${token}`;
+      setGeneratedLink(link);
+      queryClient.invalidateQueries({ queryKey: ["invitations"] });
+      toast({ title: "Invite link generated" });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const toggleActiveMutation = useMutation({
-    mutationFn: async ({ id, is_active, user_name }: { id: string; is_active: boolean; user_name: string }) => {
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean; user_name: string }) => {
       const { error } = await supabase.from("users").update({ is_active }).eq("id", id);
       if (error) throw error;
-      return { id, is_active, user_name };
+      return { id, is_active };
     },
-    onSuccess: ({ id, is_active, user_name }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users-management"] });
       toast({ title: "User status updated" });
-      log(is_active ? "activated" : "deactivated", "user", id, { name: user_name });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name.trim() || !form.email.trim() || !form.password.trim()) return;
-    createUserMutation.mutate(form);
+  const handleGenerateInvite = () => {
+    setGeneratedLink(null);
+    createInviteMutation.mutate(inviteRole);
+  };
+
+  const copyLink = () => {
+    if (generatedLink) {
+      navigator.clipboard.writeText(generatedLink);
+      toast({ title: "Copied to clipboard" });
+    }
   };
 
   const roleLabel = (role?: string) => {
@@ -106,7 +111,6 @@ export default function UsersManagement() {
     }
   };
 
-  // Can toggle permissions for: moderators (any admin/sub_admin), sub_admins (only main_admin)
   const canToggle = (targetRole?: string) => {
     if (targetRole === "moderator") return myRole === "main_admin" || myRole === "sub_admin";
     if (targetRole === "sub_admin") return myRole === "main_admin";
@@ -124,8 +128,8 @@ export default function UsersManagement() {
           <h1 className="text-2xl font-bold text-foreground">Users</h1>
           <p className="text-muted-foreground">Manage team members and permissions</p>
         </div>
-        <Button onClick={() => { setForm({ name: "", email: "", phone: "", password: "", role: "sub_admin" }); setDialogOpen(true); }} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
-          <Plus className="mr-2 h-4 w-4" /> Add User
+        <Button onClick={() => { setGeneratedLink(null); setInviteRole("sub_admin"); setDialogOpen(true); }} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+          <Plus className="mr-2 h-4 w-4" /> Generate Invite Link
         </Button>
       </div>
 
@@ -203,41 +207,46 @@ export default function UsersManagement() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-background border-border">
-          <DialogHeader><DialogTitle>Create New User</DialogTitle></DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Full Name</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="bg-background/50 border-border" />
-            </div>
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className="bg-background/50 border-border" />
-            </div>
-            <div className="space-y-2">
-              <Label>Phone</Label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="bg-background/50 border-border" />
-            </div>
-            <div className="space-y-2">
-              <Label>Temporary Password</Label>
-              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={8} className="bg-background/50 border-border" />
-            </div>
+          <DialogHeader><DialogTitle>Generate Invite Link</DialogTitle></DialogHeader>
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label>Role</Label>
-              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as Enums<"app_role"> })}>
+              <Select value={inviteRole} onValueChange={(v) => { setInviteRole(v as Enums<"app_role">); setGeneratedLink(null); }}>
                 <SelectTrigger className="bg-background/50 border-border"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="sub_admin">Sub Admin</SelectItem>
                   <SelectItem value="moderator">Moderator</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">The user who signs up with this link will automatically be assigned this role.</p>
             </div>
+
+            {generatedLink && (
+              <div className="space-y-2">
+                <Label>Invite Link</Label>
+                <div className="flex gap-2">
+                  <Input value={generatedLink} readOnly className="bg-background/50 border-border text-card-foreground text-xs" />
+                  <Button type="button" variant="outline" size="icon" onClick={copyLink}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">This link expires in 7 days. Share it with the user to invite them.</p>
+              </div>
+            )}
+
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button type="submit" className="bg-secondary text-secondary-foreground hover:bg-secondary/90" disabled={createUserMutation.isPending}>
-                {createUserMutation.isPending ? "Creating..." : "Create User"}
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Close</Button>
+              <Button
+                type="button"
+                className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                disabled={createInviteMutation.isPending}
+                onClick={handleGenerateInvite}
+              >
+                <LinkIcon className="mr-2 h-4 w-4" />
+                {createInviteMutation.isPending ? "Generating..." : "Generate Link"}
               </Button>
             </DialogFooter>
-          </form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
