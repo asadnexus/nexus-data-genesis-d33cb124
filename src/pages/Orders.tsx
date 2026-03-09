@@ -1016,6 +1016,16 @@ export default function Orders() {
                       website: companySettings?.website || "",
                     },
                     invoice_url: viewOrder.invoice_url,
+                    colors: invoiceSettings ? {
+                      primary_color: invoiceSettings.primary_color,
+                      secondary_color: invoiceSettings.secondary_color,
+                      accent_color: invoiceSettings.accent_color,
+                      text_color: invoiceSettings.text_color,
+                      header_color: invoiceSettings.header_color,
+                      border_color: invoiceSettings.border_color,
+                      background_color: invoiceSettings.background_color,
+                    } : undefined,
+                    use_background_image: invoiceSettings?.use_background_image ?? false,
                   }}
                 />
               </div>
@@ -1046,6 +1056,16 @@ export default function Orders() {
                       website: companySettings?.website || "",
                     },
                     invoice_url: viewOrder.invoice_url,
+                    colors: invoiceSettings ? {
+                      primary_color: invoiceSettings.primary_color,
+                      secondary_color: invoiceSettings.secondary_color,
+                      accent_color: invoiceSettings.accent_color,
+                      text_color: invoiceSettings.text_color,
+                      header_color: invoiceSettings.header_color,
+                      border_color: invoiceSettings.border_color,
+                      background_color: invoiceSettings.background_color,
+                    } : undefined,
+                    use_background_image: invoiceSettings?.use_background_image ?? false,
                   }}
                 />
               </div>
