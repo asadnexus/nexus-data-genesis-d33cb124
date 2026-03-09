@@ -5,18 +5,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, UserCog, ChevronDown, ChevronRight, Copy, Link as LinkIcon } from "lucide-react";
+import { Plus, Search, UserCog, ChevronDown, ChevronRight, Copy, Link as LinkIcon, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PermissionToggles } from "@/components/PermissionToggles";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Tables, Enums } from "@/integrations/supabase/types";
+import { format } from "date-fns";
 
 type UserProfile = Tables<"users"> & { role?: Enums<"app_role"> };
+type Invitation = Tables<"invitations">;
 
 export default function UsersManagement() {
   const { user, role: myRole } = useAuth();
