@@ -359,13 +359,15 @@ export default function Orders() {
 
   // Quick status change
   const statusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status, invoice_code }: { id: string; status: string; invoice_code: string }) => {
       const { error } = await supabase.from("orders").update({ status }).eq("id", id);
       if (error) throw error;
+      return { id, status, invoice_code };
     },
-    onSuccess: () => {
+    onSuccess: ({ id, status, invoice_code }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Status updated" });
+      log("status_changed", "order", id, { invoice_code, status });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -382,32 +384,36 @@ export default function Orders() {
 
   // Soft delete order
   const softDeleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, invoice_code }: { id: string; invoice_code: string }) => {
       const { error } = await supabase
         .from("orders")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      return { id, invoice_code };
     },
-    onSuccess: () => {
+    onSuccess: ({ id, invoice_code }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Order deleted" });
+      log("deleted", "order", id, { invoice_code });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   // Restore order
   const restoreMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, invoice_code }: { id: string; invoice_code: string }) => {
       const { error } = await supabase
         .from("orders")
         .update({ deleted_at: null })
         .eq("id", id);
       if (error) throw error;
+      return { id, invoice_code };
     },
-    onSuccess: () => {
+    onSuccess: ({ id, invoice_code }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Order restored" });
+      log("restored", "order", id, { invoice_code });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
