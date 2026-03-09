@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          user_code: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          user_code?: string
+          user_id: string
+          user_name?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          user_code?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
       company_settings: {
         Row: {
           address: string | null
@@ -388,6 +424,63 @@ export type Database = {
           price?: number
           stock?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_permissions: {
+        Row: {
+          can_create_orders: boolean
+          can_delete_customers: boolean
+          can_delete_orders: boolean
+          can_edit_products: boolean
+          can_print_invoice: boolean
+          can_restore_deleted: boolean
+          can_view_activity_logs: boolean
+          can_view_customers: boolean
+          can_view_dashboard: boolean
+          can_view_orders: boolean
+          can_view_products: boolean
+          can_view_settings: boolean
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_create_orders?: boolean
+          can_delete_customers?: boolean
+          can_delete_orders?: boolean
+          can_edit_products?: boolean
+          can_print_invoice?: boolean
+          can_restore_deleted?: boolean
+          can_view_activity_logs?: boolean
+          can_view_customers?: boolean
+          can_view_dashboard?: boolean
+          can_view_orders?: boolean
+          can_view_products?: boolean
+          can_view_settings?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_create_orders?: boolean
+          can_delete_customers?: boolean
+          can_delete_orders?: boolean
+          can_edit_products?: boolean
+          can_print_invoice?: boolean
+          can_restore_deleted?: boolean
+          can_view_activity_logs?: boolean
+          can_view_customers?: boolean
+          can_view_dashboard?: boolean
+          can_view_orders?: boolean
+          can_view_products?: boolean
+          can_view_settings?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
