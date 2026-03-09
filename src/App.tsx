@@ -18,7 +18,6 @@ import UsersManagement from "./pages/UsersManagement";
 import Orders from "./pages/Orders";
 import Settings from "./pages/Settings";
 import InvoiceSettings from "./pages/InvoiceSettings";
-import ActivityLogs from "./pages/ActivityLogs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,7 +43,6 @@ const App = () => (
               <Route path="/orders" element={<Orders />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/invoice-settings" element={<InvoiceSettings />} />
-              <Route path="/activity-logs" element={<ActivityLogs />} />
               <Route path="/users" element={<ProtectedRoute requiredRole="main_admin"><UsersManagement /></ProtectedRoute>} />
             </Route>
             <Route path="*" element={<NotFound />} />

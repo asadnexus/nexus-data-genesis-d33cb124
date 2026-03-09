@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyPermissions } from "@/hooks/usePermissions";
-import { useActivityLog } from "@/hooks/useActivityLog";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,7 @@ type Product = Tables<"products">;
 export default function Products() {
   const { user } = useAuth();
   const { permissions } = useMyPermissions();
-  const { log } = useActivityLog();
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -85,7 +85,7 @@ export default function Products() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Product created" });
-      log("created", "product", data.id, { name: data.name, code: data.code });
+      
       closeDialog();
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -105,7 +105,7 @@ export default function Products() {
     onSuccess: ({ id, values }) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Product updated" });
-      log("updated", "product", id, { name: values.name });
+      
       closeDialog();
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -120,7 +120,7 @@ export default function Products() {
     onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Product deleted" });
-      log("deleted", "product", product.id, { name: product.name, code: product.code });
+      
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -134,7 +134,7 @@ export default function Products() {
     onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Product restored" });
-      log("restored", "product", product.id, { name: product.name, code: product.code });
+      
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });

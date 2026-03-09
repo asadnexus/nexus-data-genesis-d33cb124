@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 interface PermissionTogglesProps {
-  userId: string; // auth_id
+  userId: string;
   userRole: string;
 }
 
@@ -25,20 +25,14 @@ const PERMISSION_ITEMS: PermissionItem[] = [
   { key: "can_view_dashboard", label: "View dashboard", group: "General" },
   { key: "can_view_settings", label: "View settings", group: "General" },
   { key: "can_print_invoice", label: "Print invoice", group: "General" },
-  { key: "can_view_activity_logs", label: "View activity logs", group: "General" },
   { key: "can_restore_deleted", label: "Restore deleted", group: "General" },
 ];
 
 function getToggleableKeys(role: string): PermissionKey[] {
   if (role === "moderator") {
-    // Everything toggleable except restore_deleted (always true)
     return PERMISSION_ITEMS
       .filter((p) => p.key !== "can_restore_deleted")
       .map((p) => p.key);
-  }
-  if (role === "sub_admin") {
-    // Only activity_logs is toggleable
-    return ["can_view_activity_logs"];
   }
   return [];
 }
@@ -69,7 +63,6 @@ export function PermissionToggles({ userId, userRole }: PermissionTogglesProps) 
     );
   };
 
-  // Group items
   const groups = items.reduce<Record<string, PermissionItem[]>>((acc, item) => {
     (acc[item.group] ??= []).push(item);
     return acc;

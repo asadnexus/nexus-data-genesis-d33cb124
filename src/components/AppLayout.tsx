@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyPermissions } from "@/hooks/usePermissions";
-import { Package, Users, UserCog, LayoutDashboard, LogOut, Menu, X, ShoppingCart, Settings, FileText, Activity } from "lucide-react";
+import { Package, Users, UserCog, LayoutDashboard, LogOut, Menu, X, ShoppingCart, Settings, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,6 @@ const navItems: NavItem[] = [
   { to: "/orders", label: "Orders", icon: ShoppingCart, roles: ["main_admin", "sub_admin", "moderator"], permissionKey: "can_view_orders" },
   { to: "/invoice-settings", label: "Invoice", icon: FileText, roles: ["main_admin", "sub_admin"] },
   { to: "/settings", label: "Settings", icon: Settings, roles: ["main_admin", "sub_admin", "moderator"], permissionKey: "can_view_settings" },
-  { to: "/activity-logs", label: "Activity Logs", icon: Activity, roles: ["main_admin", "sub_admin", "moderator"], permissionKey: "can_view_activity_logs" },
   { to: "/users", label: "Users", icon: UserCog, roles: ["main_admin"] },
 ];
 

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyPermissions } from "@/hooks/usePermissions";
-import { useActivityLog } from "@/hooks/useActivityLog";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,7 +79,7 @@ function statusColor(status: string | null): string {
 export default function Orders() {
   const { user } = useAuth();
   const { permissions } = useMyPermissions();
-  const { log } = useActivityLog();
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { settings: companySettings } = useCompanySettings();
@@ -309,7 +309,7 @@ export default function Orders() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["products-active"] });
       toast({ title: "Order created", description: `Invoice ${invoiceCode}` });
-      log("created", "order", orderId as string, { invoice_code: invoiceCode, customer: customerName });
+      
       setDialogOpen(false);
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -343,7 +343,7 @@ export default function Orders() {
     onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Order updated" });
-      log("updated", "order", order.id, { invoice_code: order.invoice_code });
+      
       setEditOpen(false);
       setEditOrder(null);
       // Refresh view if open
@@ -374,7 +374,7 @@ export default function Orders() {
     onSuccess: ({ id, status, invoice_code }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Status updated" });
-      log("status_changed", "order", id, { invoice_code, status });
+      
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -402,7 +402,7 @@ export default function Orders() {
     onSuccess: ({ id, invoice_code }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Order deleted" });
-      log("deleted", "order", id, { invoice_code });
+      
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -420,7 +420,7 @@ export default function Orders() {
     onSuccess: ({ id, invoice_code }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Order restored" });
-      log("restored", "order", id, { invoice_code });
+      
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
