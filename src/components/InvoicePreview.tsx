@@ -28,7 +28,7 @@ interface InvoiceColors {
   background_color: string;
 }
 
-interface InvoiceData {
+interface InvoicePreviewData {
   invoice_code: string;
   customer_name: string;
   customer_phone: string;
@@ -43,27 +43,13 @@ interface InvoiceData {
   items: InvoiceItem[];
   company: CompanyInfo;
   invoice_url?: string | null;
-  colors?: InvoiceColors;
-  use_background_image?: boolean;
+  colors: InvoiceColors;
+  use_background_image: boolean;
 }
 
-// Default colors for backward compatibility
-const defaultColors: InvoiceColors = {
-  primary_color: "#3b6cf5",
-  secondary_color: "#1a1a2e",
-  accent_color: "#555555",
-  text_color: "#1a1a2e",
-  header_color: "#3b6cf5",
-  border_color: "#dddddd",
-  background_color: "#ffffff",
-};
-
-export const InvoiceTemplate = forwardRef<HTMLDivElement, { data: InvoiceData }>(
+export const InvoicePreview = forwardRef<HTMLDivElement, { data: InvoicePreviewData }>(
   ({ data }, ref) => {
-    const { company, items } = data;
-    const colors = data.colors || defaultColors;
-    const use_background_image = data.use_background_image ?? false;
-    
+    const { company, items, colors, use_background_image } = data;
     const date = new Date(data.created_at).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -226,4 +212,4 @@ export const InvoiceTemplate = forwardRef<HTMLDivElement, { data: InvoiceData }>
   }
 );
 
-InvoiceTemplate.displayName = "InvoiceTemplate";
+InvoicePreview.displayName = "InvoicePreview";

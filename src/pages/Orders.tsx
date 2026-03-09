@@ -18,6 +18,7 @@ import { GlassSearchBar } from "@/components/GlassSearchBar";
 import { InvoiceTemplate } from "@/components/InvoiceTemplate";
 import { CustomerReceipt } from "@/components/CustomerReceipt";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useInvoiceSettings, defaultInvoiceSettings } from "@/hooks/useInvoiceSettings";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,6 +79,7 @@ export default function Orders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { settings: companySettings } = useCompanySettings();
+  const { settings: invoiceSettings } = useInvoiceSettings();
   const invoiceRef = useRef<HTMLDivElement>(null);
   const customerReceiptRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
@@ -1014,6 +1016,16 @@ export default function Orders() {
                       website: companySettings?.website || "",
                     },
                     invoice_url: viewOrder.invoice_url,
+                    colors: invoiceSettings ? {
+                      primary_color: invoiceSettings.primary_color,
+                      secondary_color: invoiceSettings.secondary_color,
+                      accent_color: invoiceSettings.accent_color,
+                      text_color: invoiceSettings.text_color,
+                      header_color: invoiceSettings.header_color,
+                      border_color: invoiceSettings.border_color,
+                      background_color: invoiceSettings.background_color,
+                    } : undefined,
+                    use_background_image: invoiceSettings?.use_background_image ?? false,
                   }}
                 />
               </div>
@@ -1044,6 +1056,16 @@ export default function Orders() {
                       website: companySettings?.website || "",
                     },
                     invoice_url: viewOrder.invoice_url,
+                    colors: invoiceSettings ? {
+                      primary_color: invoiceSettings.primary_color,
+                      secondary_color: invoiceSettings.secondary_color,
+                      accent_color: invoiceSettings.accent_color,
+                      text_color: invoiceSettings.text_color,
+                      header_color: invoiceSettings.header_color,
+                      border_color: invoiceSettings.border_color,
+                      background_color: invoiceSettings.background_color,
+                    } : undefined,
+                    use_background_image: invoiceSettings?.use_background_image ?? false,
                   }}
                 />
               </div>
