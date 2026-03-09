@@ -79,7 +79,7 @@ function statusColor(status: string | null): string {
 export default function Orders() {
   const { user } = useAuth();
   const { permissions } = useMyPermissions();
-  const { log } = useActivityLog();
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { settings: companySettings } = useCompanySettings();
