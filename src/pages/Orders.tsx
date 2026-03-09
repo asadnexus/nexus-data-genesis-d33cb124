@@ -343,7 +343,7 @@ export default function Orders() {
     onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Order updated" });
-      log("updated", "order", order.id, { invoice_code: order.invoice_code });
+      
       setEditOpen(false);
       setEditOrder(null);
       // Refresh view if open
