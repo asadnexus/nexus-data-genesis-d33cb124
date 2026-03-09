@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMyPermissions } from "@/hooks/usePermissions";
+import { useActivityLog } from "@/hooks/useActivityLog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +20,9 @@ import type { Tables } from "@/integrations/supabase/types";
 type Customer = Tables<"customers">;
 
 export default function Customers() {
-  const { user, role } = useAuth();
+  const { user } = useAuth();
+  const { permissions } = useMyPermissions();
+  const { log } = useActivityLog();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -28,7 +32,9 @@ export default function Customers() {
   const [form, setForm] = useState({ name: "", phone: "", address: "" });
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  const canEdit = role === "main_admin" || role === "sub_admin";
+  const canView = permissions.can_view_customers;
+  const canDelete = permissions.can_delete_customers;
+  const canRestore = permissions.can_restore_deleted;
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ["customers", showDeleted],
@@ -39,46 +45,39 @@ export default function Customers() {
       if (error) throw error;
       return data as Customer[];
     },
+    enabled: canView,
   });
 
-  // Assign serial numbers based on creation order (oldest=1), then filter/sort
   const processedCustomers = useMemo(() => {
-    // Sort by created_at ascending to assign serial numbers
     const sorted = [...customers].sort(
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
     const withSerial = sorted.map((c, i) => ({ ...c, serial: i + 1 }));
-
-    // Filter by search (phone)
     const filtered = withSerial.filter(
       (c) =>
-        (c.phone && c.phone.includes(search)) ||
-        c.name.toLowerCase().includes(search.toLowerCase())
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        (c.phone && c.phone.includes(search))
     );
-
-    // Sort by serial
-    if (sortDirection === "desc") {
-      filtered.sort((a, b) => b.serial - a.serial); // newest (highest serial) first
-    } else {
-      filtered.sort((a, b) => a.serial - b.serial); // oldest first
-    }
-
-    return filtered;
+    return sortDirection === "asc"
+      ? filtered.sort((a, b) => a.serial - b.serial)
+      : filtered.sort((a, b) => b.serial - a.serial);
   }, [customers, search, sortDirection]);
 
   const createMutation = useMutation({
     mutationFn: async (values: typeof form) => {
-      const { error } = await supabase.from("customers").insert({
+      const { data, error } = await supabase.from("customers").insert({
         name: values.name,
         phone: values.phone || null,
         address: values.address || null,
         created_by: user!.id,
-      });
+      }).select().single();
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast({ title: "Customer created" });
+      log("created", "customer", data.id, { name: data.name, phone: data.phone });
       closeDialog();
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -92,35 +91,41 @@ export default function Customers() {
         address: values.address || null,
       }).eq("id", id);
       if (error) throw error;
+      return { id, values };
     },
-    onSuccess: () => {
+    onSuccess: ({ id, values }) => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast({ title: "Customer updated" });
+      log("updated", "customer", id, { name: values.name });
       closeDialog();
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const softDeleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("customers").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    mutationFn: async (customer: Customer) => {
+      const { error } = await supabase.from("customers").update({ deleted_at: new Date().toISOString() }).eq("id", customer.id);
       if (error) throw error;
+      return customer;
     },
-    onSuccess: () => {
+    onSuccess: (customer) => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast({ title: "Customer deleted" });
+      log("deleted", "customer", customer.id, { name: customer.name });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const restoreMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("customers").update({ deleted_at: null }).eq("id", id);
+    mutationFn: async (customer: Customer) => {
+      const { error } = await supabase.from("customers").update({ deleted_at: null }).eq("id", customer.id);
       if (error) throw error;
+      return customer;
     },
-    onSuccess: () => {
+    onSuccess: (customer) => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast({ title: "Customer restored" });
+      log("restored", "customer", customer.id, { name: customer.name });
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -143,14 +148,13 @@ export default function Customers() {
           <h1 className="text-2xl font-bold text-foreground">Customers</h1>
           <p className="text-muted-foreground">Manage your customer directory</p>
         </div>
-        {canEdit && (
+        {canDelete && (
           <Button onClick={openCreate} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
             <Plus className="mr-2 h-4 w-4" /> Add Customer
           </Button>
         )}
       </div>
 
-      {/* Glass Search Bar */}
       <div className="mb-6">
         <GlassSearchBar
           placeholder="Search by name or phone..."
@@ -189,7 +193,7 @@ export default function Customers() {
                     <TableHead>Phone</TableHead>
                     <TableHead>Address</TableHead>
                     <TableHead>Status</TableHead>
-                    {canEdit && <TableHead className="text-right">Actions</TableHead>}
+                    {(canDelete || canRestore) && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -202,16 +206,20 @@ export default function Customers() {
                       <TableCell>
                         {c.deleted_at ? <Badge variant="destructive">Deleted</Badge> : <Badge className="bg-success text-success-foreground">Active</Badge>}
                       </TableCell>
-                      {canEdit && (
+                      {(canDelete || canRestore) && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             {c.deleted_at ? (
-                              <Button size="icon" variant="ghost" onClick={() => restoreMutation.mutate(c.id)}><RotateCcw className="h-4 w-4" /></Button>
+                              canRestore && (
+                                <Button size="icon" variant="ghost" onClick={() => restoreMutation.mutate(c)}><RotateCcw className="h-4 w-4" /></Button>
+                              )
                             ) : (
-                              <>
-                                <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                                <Button size="icon" variant="ghost" onClick={() => softDeleteMutation.mutate(c.id)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                              </>
+                              canDelete && (
+                                <>
+                                  <Button size="icon" variant="ghost" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+                                  <Button size="icon" variant="ghost" onClick={() => softDeleteMutation.mutate(c)} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                </>
+                              )
                             )}
                           </div>
                         </TableCell>
