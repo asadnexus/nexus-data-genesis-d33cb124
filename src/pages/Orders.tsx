@@ -18,6 +18,7 @@ import { GlassSearchBar } from "@/components/GlassSearchBar";
 import { InvoiceTemplate } from "@/components/InvoiceTemplate";
 import { CustomerReceipt } from "@/components/CustomerReceipt";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useInvoiceSettings, defaultInvoiceSettings } from "@/hooks/useInvoiceSettings";
 import {
   DropdownMenu,
   DropdownMenuContent,
