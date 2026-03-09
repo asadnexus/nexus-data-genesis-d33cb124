@@ -10,7 +10,7 @@ export type PermissionKey =
   | "can_view_products" | "can_edit_products"
   | "can_view_customers" | "can_delete_customers"
   | "can_view_dashboard" | "can_view_settings"
-  | "can_print_invoice" | "can_view_activity_logs"
+  | "can_print_invoice"
   | "can_restore_deleted";
 
 const ALL_TRUE: Record<PermissionKey, boolean> = {
@@ -24,27 +24,6 @@ const ALL_TRUE: Record<PermissionKey, boolean> = {
   can_view_dashboard: true,
   can_view_settings: true,
   can_print_invoice: true,
-  can_view_activity_logs: true,
-  can_restore_deleted: true,
-};
-
-// Sub-admin always has everything EXCEPT activity_logs is toggleable
-const SUB_ADMIN_ALWAYS: Partial<Record<PermissionKey, boolean>> = {
-  can_view_orders: true,
-  can_create_orders: true,
-  can_delete_orders: true,
-  can_view_products: true,
-  can_edit_products: true,
-  can_view_customers: true,
-  can_delete_customers: true,
-  can_view_dashboard: true,
-  can_view_settings: true,
-  can_print_invoice: true,
-  can_restore_deleted: true,
-};
-
-// Moderator: restore_deleted is always true, everything else is toggleable
-const MODERATOR_ALWAYS: Partial<Record<PermissionKey, boolean>> = {
   can_restore_deleted: true,
 };
 
@@ -52,22 +31,12 @@ function resolvePermissions(
   role: string | null,
   dbPerms: UserPermissions | null
 ): Record<PermissionKey, boolean> {
-  if (role === "main_admin") return { ...ALL_TRUE };
-
-  if (role === "sub_admin") {
-    return {
-      ...ALL_TRUE,
-      ...SUB_ADMIN_ALWAYS,
-      // activity_logs is toggleable for sub_admin
-      can_view_activity_logs: dbPerms?.can_view_activity_logs ?? false,
-    };
-  }
+  if (role === "main_admin" || role === "sub_admin") return { ...ALL_TRUE };
 
   if (role === "moderator") {
     if (!dbPerms) {
       return {
         ...ALL_TRUE,
-        can_view_activity_logs: false,
         can_view_settings: false,
         can_edit_products: false,
         can_delete_orders: false,
@@ -85,13 +54,10 @@ function resolvePermissions(
       can_view_dashboard: dbPerms.can_view_dashboard,
       can_view_settings: dbPerms.can_view_settings,
       can_print_invoice: dbPerms.can_print_invoice,
-      can_view_activity_logs: dbPerms.can_view_activity_logs,
-      // Always true for moderator
       can_restore_deleted: true,
     };
   }
 
-  // Fallback: no access
   return Object.fromEntries(
     Object.keys(ALL_TRUE).map((k) => [k, false])
   ) as Record<PermissionKey, boolean>;
