@@ -111,7 +111,7 @@ export default function Customers() {
     onSuccess: (customer) => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       toast({ title: "Customer deleted" });
-      log("deleted", "customer", customer.id, { name: customer.name });
+      
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
