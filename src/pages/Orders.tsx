@@ -95,6 +95,10 @@ export default function Orders() {
   const [viewItems, setViewItems] = useState<OrderItemRow[]>([]);
   const [editOpen, setEditOpen] = useState(false);
   const [invoiceMode, setInvoiceMode] = useState(false);
+  const [whatsappDialogOpen, setWhatsappDialogOpen] = useState(false);
+  const [whatsappMessage, setWhatsappMessage] = useState("");
+  const [whatsappPdfUrl, setWhatsappPdfUrl] = useState("");
+  const [whatsappGenerating, setWhatsappGenerating] = useState(false);
 
   // Order form state (create)
   const [phone, setPhone] = useState("");
