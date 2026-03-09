@@ -374,7 +374,7 @@ export default function Orders() {
     onSuccess: ({ id, status, invoice_code }) => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({ title: "Status updated" });
-      log("status_changed", "order", id, { invoice_code, status });
+      
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
