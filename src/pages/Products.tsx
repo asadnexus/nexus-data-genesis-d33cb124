@@ -105,7 +105,7 @@ export default function Products() {
     onSuccess: ({ id, values }) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Product updated" });
-      log("updated", "product", id, { name: values.name });
+      
       closeDialog();
     },
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
