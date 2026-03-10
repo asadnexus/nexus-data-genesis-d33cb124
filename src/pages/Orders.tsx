@@ -67,10 +67,15 @@ interface OrderItemRow {
 
 function statusColor(status: string | null): string {
   switch (status) {
-    case "Confirmed": return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+    case "Pending": return "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30";
+    case "Sending · Pending":
+    case "Bulk Sent · Pending": return "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 animate-pulse";
+    case "Confirmed": return "bg-[#3B82F6]/20 text-[#3B82F6] border-[#3B82F6]/30";
+    case "In Review": return "bg-[#60A5FA]/20 text-[#60A5FA] border-[#60A5FA]/30";
     case "Dispatched": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-    case "Delivered": return "bg-green-500/20 text-green-400 border-green-500/30";
-    case "Cancelled": return "bg-destructive/20 text-destructive border-destructive/30";
+    case "On Hold": return "bg-[#F97316]/20 text-[#F97316] border-[#F97316]/30";
+    case "Delivered": return "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30";
+    case "Cancelled": return "bg-[#EF4444]/20 text-[#EF4444] border-[#EF4444]/30";
     case "Returned": return "bg-orange-500/20 text-orange-400 border-orange-500/30";
     default: return "bg-muted text-muted-foreground border-border";
   }
