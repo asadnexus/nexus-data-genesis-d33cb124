@@ -173,11 +173,16 @@ export default function Orders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("couriers")
-        .select("id, name, is_active")
+        .select("id, name, is_active, api_key, secret_key, base_url")
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
-      return data;
+      // Sort Steadfast first
+      return (data || []).sort((a, b) => {
+        const aS = a.name.toLowerCase().includes("steadfast") ? 0 : 1;
+        const bS = b.name.toLowerCase().includes("steadfast") ? 0 : 1;
+        return aS - bS;
+      });
     },
   });
 
