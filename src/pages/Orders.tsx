@@ -624,6 +624,9 @@ export default function Orders() {
                               <Send className="h-4 w-4" />
                             </Button>
                           )}
+                          <Button size="icon" variant="ghost" onClick={() => openViewOrder(o)} title="View">
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           {canCreate && !o.deleted_at && (
                             <>
                               <Button size="icon" variant="ghost" onClick={() => openEdit(o)} title="Edit">
