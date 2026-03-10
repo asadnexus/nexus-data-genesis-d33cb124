@@ -1441,6 +1441,93 @@ export default function Orders() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Single Send Modal */}
+      <Dialog open={sendDialogOpen} onOpenChange={(open) => { setSendDialogOpen(open); if (!open) setSendOrder(null); }}>
+        <DialogContent className="bg-background border-border max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Send Order {sendOrder?.invoice_code}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select a courier to dispatch this order.
+            </p>
+            <div className="space-y-2">
+              <Label>Courier</Label>
+              <Select value={sendCourierId} onValueChange={setSendCourierId}>
+                <SelectTrigger className="bg-background/50 border-border">
+                  <SelectValue placeholder="Select courier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {couriers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} {c.name.toLowerCase().includes("steadfast") ? "⭐" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {sendOrder && (
+              <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm space-y-1">
+                <div className="flex justify-between"><span className="text-muted-foreground">Customer</span><span>{sendOrder.customer_name}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{sendOrder.customer_phone}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">COD</span><span>৳{Number(sendOrder.cod).toLocaleString()}</span></div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendDialogOpen(false)}>Cancel</Button>
+            <Button
+              className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+              disabled={sending || !sendCourierId}
+              onClick={() => sendOrder && handleSendToCourier([sendOrder], false)}
+            >
+              {sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              Confirm Send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Send Modal */}
+      <Dialog open={bulkSendOpen} onOpenChange={setBulkSendOpen}>
+        <DialogContent className="bg-background border-border max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Send Bulk Orders</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">{pendingOrders.length}</span> pending orders will be sent to the selected courier.
+            </p>
+            <div className="space-y-2">
+              <Label>Courier</Label>
+              <Select value={sendCourierId} onValueChange={setSendCourierId}>
+                <SelectTrigger className="bg-background/50 border-border">
+                  <SelectValue placeholder="Select courier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {couriers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} {c.name.toLowerCase().includes("steadfast") ? "⭐" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkSendOpen(false)}>Cancel</Button>
+            <Button
+              className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+              disabled={sending || !sendCourierId}
+              onClick={() => handleSendToCourier(pendingOrders, true)}
+            >
+              {sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Package className="mr-2 h-4 w-4" />}
+              Send {pendingOrders.length} Orders
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
