@@ -613,9 +613,17 @@ export default function Orders() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => openViewOrder(o)} title="View">
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          {canCreate && !o.deleted_at && o.status === "Pending" && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => { setSendOrder(o); setSendCourierId(""); setSendDialogOpen(true); }}
+                              className="text-[#4F46E5] hover:text-[#4338CA]"
+                              title="Send to courier"
+                            >
+                              <Send className="h-4 w-4" />
+                            </Button>
+                          )}
                           {canCreate && !o.deleted_at && (
                             <>
                               <Button size="icon" variant="ghost" onClick={() => openEdit(o)} title="Edit">
