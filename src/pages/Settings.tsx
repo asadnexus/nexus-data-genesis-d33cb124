@@ -376,7 +376,11 @@ export default function Settings() {
                             </div>
                             <div>
                               <h3 className="font-semibold text-foreground">{courier.name}</h3>
-                              <p className="text-xs text-muted-foreground">{courier.base_url || "No base URL set"}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {courier.name.toLowerCase().includes("steadfast")
+                                  ? "Base URL: https://portal.packzy.com/api/v1"
+                                  : courier.base_url || "No base URL set"}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
