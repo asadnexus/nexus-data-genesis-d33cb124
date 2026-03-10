@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ShoppingCart, Trash2, Eye, Pencil, RotateCcw, Download, Printer, Share2, Link, Loader2, ChevronDown } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, Eye, Pencil, RotateCcw, Download, Printer, Share2, Link, Loader2, ChevronDown, Send, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { GlassSearchBar } from "@/components/GlassSearchBar";
@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const ORDER_STATUSES = ["Pending", "Confirmed", "Dispatched", "Delivered", "Cancelled", "Returned"] as const;
+const ORDER_STATUSES = ["Pending", "Sending · Pending", "Bulk Sent · Pending", "Confirmed", "In Review", "Dispatched", "On Hold", "Delivered", "Cancelled", "Returned"] as const;
 
 interface OrderItem {
   product_id: string;
@@ -67,10 +67,15 @@ interface OrderItemRow {
 
 function statusColor(status: string | null): string {
   switch (status) {
-    case "Confirmed": return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+    case "Pending": return "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30";
+    case "Sending · Pending":
+    case "Bulk Sent · Pending": return "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 animate-pulse";
+    case "Confirmed": return "bg-[#3B82F6]/20 text-[#3B82F6] border-[#3B82F6]/30";
+    case "In Review": return "bg-[#60A5FA]/20 text-[#60A5FA] border-[#60A5FA]/30";
     case "Dispatched": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-    case "Delivered": return "bg-green-500/20 text-green-400 border-green-500/30";
-    case "Cancelled": return "bg-destructive/20 text-destructive border-destructive/30";
+    case "On Hold": return "bg-[#F97316]/20 text-[#F97316] border-[#F97316]/30";
+    case "Delivered": return "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30";
+    case "Cancelled": return "bg-[#EF4444]/20 text-[#EF4444] border-[#EF4444]/30";
     case "Returned": return "bg-orange-500/20 text-orange-400 border-orange-500/30";
     default: return "bg-muted text-muted-foreground border-border";
   }
@@ -99,6 +104,13 @@ export default function Orders() {
   const [whatsappMessage, setWhatsappMessage] = useState("");
   const [whatsappPdfUrl, setWhatsappPdfUrl] = useState("");
   const [whatsappGenerating, setWhatsappGenerating] = useState(false);
+
+  // Send to courier state
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [sendOrder, setSendOrder] = useState<OrderRow | null>(null);
+  const [bulkSendOpen, setBulkSendOpen] = useState(false);
+  const [sendCourierId, setSendCourierId] = useState("");
+  const [sending, setSending] = useState(false);
 
   // Order form state (create)
   const [phone, setPhone] = useState("");
@@ -161,11 +173,16 @@ export default function Orders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("couriers")
-        .select("id, name, is_active")
+        .select("id, name, is_active, api_key, secret_key, base_url")
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
-      return data;
+      // Sort Steadfast first
+      return (data || []).sort((a, b) => {
+        const aS = a.name.toLowerCase().includes("steadfast") ? 0 : 1;
+        const bS = b.name.toLowerCase().includes("steadfast") ? 0 : 1;
+        return aS - bS;
+      });
     },
   });
 
@@ -425,6 +442,64 @@ export default function Orders() {
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  // Send to courier handler
+  const handleSendToCourier = async (orderList: OrderRow[], isBulk: boolean) => {
+    if (!sendCourierId) {
+      toast({ title: "Select a courier", variant: "destructive" });
+      return;
+    }
+    setSending(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const token = session?.session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      const response = await supabase.functions.invoke("send-to-courier", {
+        body: {
+          courier_id: sendCourierId,
+          orders: orderList.map((o) => ({
+            order_id: o.id,
+            invoice: o.invoice_code,
+            recipient_name: o.customer_name,
+            recipient_phone: o.customer_phone,
+            recipient_address: o.customer_address || "",
+            cod_amount: Number(o.cod),
+            note: o.note || "",
+          })),
+        },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      const result = response.data;
+
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        if (isBulk) {
+          toast({ title: `Bulk send complete`, description: `${result.sent} sent, ${result.failed} failed` });
+        } else {
+          const first = result.results?.[0];
+          if (first?.success) {
+            toast({ title: "Order sent!", description: `Tracking: ${first.tracking_code}` });
+          } else {
+            toast({ title: "Send failed", description: first?.error || "Unknown error", variant: "destructive" });
+          }
+        }
+      } else {
+        toast({ title: "Send failed", description: result.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSending(false);
+      setSendDialogOpen(false);
+      setBulkSendOpen(false);
+      setSendOrder(null);
+      setSendCourierId("");
+    }
+  };
+
+  const pendingOrders = useMemo(() => orders.filter((o) => o.status === "Pending" && !o.deleted_at), [orders]);
+
   return (
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -432,11 +507,21 @@ export default function Orders() {
           <h1 className="text-2xl font-bold text-foreground">Orders</h1>
           <p className="text-muted-foreground">Manage orders and invoices</p>
         </div>
-        {canCreate && (
-          <Button onClick={openCreate} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
-            <Plus className="mr-2 h-4 w-4" /> New Order
-          </Button>
-        )}
+        <div className="flex gap-2 flex-wrap">
+          {canCreate && pendingOrders.length > 0 && (
+            <Button
+              onClick={() => { setSendCourierId(""); setBulkSendOpen(true); }}
+              className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+            >
+              <Package className="mr-2 h-4 w-4" /> Send Bulk ({pendingOrders.length})
+            </Button>
+          )}
+          {canCreate && (
+            <Button onClick={openCreate} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+              <Plus className="mr-2 h-4 w-4" /> New Order
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Glass Search Bar */}
@@ -528,6 +613,17 @@ export default function Orders() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          {canCreate && !o.deleted_at && o.status === "Pending" && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => { setSendOrder(o); setSendCourierId(""); setSendDialogOpen(true); }}
+                              className="text-[#4F46E5] hover:text-[#4338CA]"
+                              title="Send to courier"
+                            >
+                              <Send className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button size="icon" variant="ghost" onClick={() => openViewOrder(o)} title="View">
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -1341,6 +1437,93 @@ export default function Orders() {
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
               </svg>
               Open WhatsApp
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Single Send Modal */}
+      <Dialog open={sendDialogOpen} onOpenChange={(open) => { setSendDialogOpen(open); if (!open) setSendOrder(null); }}>
+        <DialogContent className="bg-background border-border max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Send Order {sendOrder?.invoice_code}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select a courier to dispatch this order.
+            </p>
+            <div className="space-y-2">
+              <Label>Courier</Label>
+              <Select value={sendCourierId} onValueChange={setSendCourierId}>
+                <SelectTrigger className="bg-background/50 border-border">
+                  <SelectValue placeholder="Select courier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {couriers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} {c.name.toLowerCase().includes("steadfast") ? "⭐" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {sendOrder && (
+              <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm space-y-1">
+                <div className="flex justify-between"><span className="text-muted-foreground">Customer</span><span>{sendOrder.customer_name}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{sendOrder.customer_phone}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">COD</span><span>৳{Number(sendOrder.cod).toLocaleString()}</span></div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendDialogOpen(false)}>Cancel</Button>
+            <Button
+              className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+              disabled={sending || !sendCourierId}
+              onClick={() => sendOrder && handleSendToCourier([sendOrder], false)}
+            >
+              {sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              Confirm Send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Send Modal */}
+      <Dialog open={bulkSendOpen} onOpenChange={setBulkSendOpen}>
+        <DialogContent className="bg-background border-border max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Send Bulk Orders</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">{pendingOrders.length}</span> pending orders will be sent to the selected courier.
+            </p>
+            <div className="space-y-2">
+              <Label>Courier</Label>
+              <Select value={sendCourierId} onValueChange={setSendCourierId}>
+                <SelectTrigger className="bg-background/50 border-border">
+                  <SelectValue placeholder="Select courier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {couriers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} {c.name.toLowerCase().includes("steadfast") ? "⭐" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkSendOpen(false)}>Cancel</Button>
+            <Button
+              className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+              disabled={sending || !sendCourierId}
+              onClick={() => handleSendToCourier(pendingOrders, true)}
+            >
+              {sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Package className="mr-2 h-4 w-4" />}
+              Send {pendingOrders.length} Orders
             </Button>
           </DialogFooter>
         </DialogContent>
