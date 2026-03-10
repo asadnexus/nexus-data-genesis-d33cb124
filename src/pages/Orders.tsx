@@ -105,6 +105,13 @@ export default function Orders() {
   const [whatsappPdfUrl, setWhatsappPdfUrl] = useState("");
   const [whatsappGenerating, setWhatsappGenerating] = useState(false);
 
+  // Send to courier state
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [sendOrder, setSendOrder] = useState<OrderRow | null>(null);
+  const [bulkSendOpen, setBulkSendOpen] = useState(false);
+  const [sendCourierId, setSendCourierId] = useState("");
+  const [sending, setSending] = useState(false);
+
   // Order form state (create)
   const [phone, setPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
