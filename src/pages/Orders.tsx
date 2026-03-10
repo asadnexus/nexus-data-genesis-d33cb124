@@ -442,6 +442,64 @@ export default function Orders() {
     onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
+  // Send to courier handler
+  const handleSendToCourier = async (orderList: OrderRow[], isBulk: boolean) => {
+    if (!sendCourierId) {
+      toast({ title: "Select a courier", variant: "destructive" });
+      return;
+    }
+    setSending(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const token = session?.session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      const response = await supabase.functions.invoke("send-to-courier", {
+        body: {
+          courier_id: sendCourierId,
+          orders: orderList.map((o) => ({
+            order_id: o.id,
+            invoice: o.invoice_code,
+            recipient_name: o.customer_name,
+            recipient_phone: o.customer_phone,
+            recipient_address: o.customer_address || "",
+            cod_amount: Number(o.cod),
+            note: o.note || "",
+          })),
+        },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      const result = response.data;
+
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        if (isBulk) {
+          toast({ title: `Bulk send complete`, description: `${result.sent} sent, ${result.failed} failed` });
+        } else {
+          const first = result.results?.[0];
+          if (first?.success) {
+            toast({ title: "Order sent!", description: `Tracking: ${first.tracking_code}` });
+          } else {
+            toast({ title: "Send failed", description: first?.error || "Unknown error", variant: "destructive" });
+          }
+        }
+      } else {
+        toast({ title: "Send failed", description: result.error, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSending(false);
+      setSendDialogOpen(false);
+      setBulkSendOpen(false);
+      setSendOrder(null);
+      setSendCourierId("");
+    }
+  };
+
+  const pendingOrders = useMemo(() => orders.filter((o) => o.status === "Pending" && !o.deleted_at), [orders]);
+
   return (
     <div>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -449,11 +507,21 @@ export default function Orders() {
           <h1 className="text-2xl font-bold text-foreground">Orders</h1>
           <p className="text-muted-foreground">Manage orders and invoices</p>
         </div>
-        {canCreate && (
-          <Button onClick={openCreate} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
-            <Plus className="mr-2 h-4 w-4" /> New Order
-          </Button>
-        )}
+        <div className="flex gap-2 flex-wrap">
+          {canCreate && pendingOrders.length > 0 && (
+            <Button
+              onClick={() => { setSendCourierId(""); setBulkSendOpen(true); }}
+              className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
+            >
+              <Package className="mr-2 h-4 w-4" /> Send Bulk ({pendingOrders.length})
+            </Button>
+          )}
+          {canCreate && (
+            <Button onClick={openCreate} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+              <Plus className="mr-2 h-4 w-4" /> New Order
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Glass Search Bar */}
