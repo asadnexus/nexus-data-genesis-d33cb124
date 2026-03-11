@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     // Generate user code
     const { data: code } = await adminClient.rpc("generate_user_code", { _role: invite.role });
 
-    // Create profile
+    // Create profile with organization_id from the invitation
     const { error: profileError } = await adminClient.from("users").insert({
       auth_id: auth_user_id,
       user_code: code,
@@ -67,6 +67,7 @@ Deno.serve(async (req) => {
       name: authUser.user_metadata?.name || authUser.email,
       phone: authUser.user_metadata?.phone || null,
       created_by: invite.created_by,
+      organization_id: invite.organization_id,
     });
 
     if (profileError) {
@@ -76,10 +77,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Assign role
+    // Assign role with organization_id
     const { error: roleError } = await adminClient.from("user_roles").insert({
       user_id: auth_user_id,
       role: invite.role,
+      organization_id: invite.organization_id,
     });
 
     if (roleError) {

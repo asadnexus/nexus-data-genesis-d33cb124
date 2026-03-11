@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify the caller is authenticated and is a main_admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Missing authorization" }), {
@@ -23,7 +22,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Client with caller's token to verify role
     const callerClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -36,7 +34,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check caller is main_admin using service role
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { data: roleData } = await adminClient
       .from("user_roles")
@@ -51,6 +48,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Get caller's organization
+    const { data: callerProfile } = await adminClient
+      .from("users")
+      .select("organization_id")
+      .eq("auth_id", caller.id)
+      .single();
+
+    const orgId = callerProfile?.organization_id;
+
     const { name, email, phone, password, role } = await req.json();
 
     if (!name || !email || !password || !role) {
@@ -60,7 +66,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create user with admin API — email is auto-confirmed
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -75,10 +80,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Generate user code
     const { data: code } = await adminClient.rpc("generate_user_code", { _role: role });
 
-    // Create profile
     const { error: profileError } = await adminClient.from("users").insert({
       auth_id: newUser.user.id,
       user_code: code,
@@ -86,6 +89,7 @@ Deno.serve(async (req) => {
       name,
       phone: phone || null,
       created_by: caller.id,
+      organization_id: orgId,
     });
 
     if (profileError) {
@@ -95,10 +99,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Assign role
     const { error: roleError } = await adminClient.from("user_roles").insert({
       user_id: newUser.user.id,
       role,
+      organization_id: orgId,
     });
 
     if (roleError) {

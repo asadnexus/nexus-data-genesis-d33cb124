@@ -133,6 +133,7 @@ export default function Settings() {
       } else {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
+        const { data: orgData } = await supabase.from("users").select("organization_id").eq("auth_id", user.id).single();
 
         const { error } = await supabase.from("couriers").insert({
           name: name.trim(),
@@ -141,7 +142,8 @@ export default function Settings() {
           base_url: baseUrl.trim(),
           is_active: isActive,
           created_by: user.id,
-        });
+          organization_id: orgData?.organization_id,
+        } as any);
         if (error) {
           if (error.message.includes("Maximum 3 couriers")) {
             throw new Error("Maximum 3 couriers allowed. Delete one to add another.");

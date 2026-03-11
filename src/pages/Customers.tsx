@@ -70,7 +70,8 @@ export default function Customers() {
         phone: values.phone || null,
         address: values.address || null,
         created_by: user!.id,
-      }).select().single();
+        organization_id: (await supabase.from("users").select("organization_id").eq("auth_id", user!.id).single()).data?.organization_id,
+      } as any).select().single();
       if (error) throw error;
       return data;
     },
