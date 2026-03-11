@@ -71,6 +71,7 @@ export default function Products() {
   const createMutation = useMutation({
     mutationFn: async (values: typeof form) => {
       const { data: code } = await supabase.rpc("generate_product_code");
+      const { data: orgData } = await supabase.from("users").select("organization_id").eq("auth_id", user!.id).single();
       const { data, error } = await supabase.from("products").insert({
         code: code!,
         name: values.name,
@@ -78,7 +79,8 @@ export default function Products() {
         stock: parseInt(values.stock) || 0,
         description: values.description || null,
         created_by: user!.id,
-      }).select().single();
+        organization_id: orgData?.organization_id,
+      } as any).select().single();
       if (error) throw error;
       return data;
     },

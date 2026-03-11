@@ -93,11 +93,12 @@ export function useInvoiceSettings() {
       } else {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
-        
+        const { data: orgData } = await supabase.from("users").select("organization_id").eq("auth_id", user.id).single();
         const { error } = await supabase.from("invoice_settings").insert({
           ...settings,
           created_by: user.id,
-        });
+          organization_id: orgData?.organization_id,
+        } as any);
         if (error) throw error;
       }
     },

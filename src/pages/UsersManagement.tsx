@@ -63,9 +63,10 @@ export default function UsersManagement() {
 
   const createInviteMutation = useMutation({
     mutationFn: async (role: Enums<"app_role">) => {
+      const { data: orgData } = await supabase.from("users").select("organization_id").eq("auth_id", user!.id).single();
       const { data, error } = await supabase
         .from("invitations")
-        .insert({ role, created_by: user!.id })
+        .insert({ role, created_by: user!.id, organization_id: orgData?.organization_id } as any)
         .select("token")
         .single();
       if (error) throw error;
