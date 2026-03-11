@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, role, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, role, organizationId: (profile as any)?.organization_id ?? null, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
