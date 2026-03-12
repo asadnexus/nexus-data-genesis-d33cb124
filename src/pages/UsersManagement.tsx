@@ -201,8 +201,14 @@ export default function UsersManagement() {
                         <>
                           <TableRow key={u.id}>
                             <TableCell>
-                              {canToggle(u.role) && (
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleExpand(u.auth_id)}>
+                              {canViewPermissions(u.role) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => toggleExpand(u.auth_id)}
+                                  disabled={!canManagePermissions}
+                                >
                                   {expandedUser === u.auth_id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                 </Button>
                               )}
