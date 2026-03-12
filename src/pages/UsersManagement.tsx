@@ -229,11 +229,11 @@ export default function UsersManagement() {
                               )}
                             </TableCell>
                           </TableRow>
-                          {expandedUser === u.auth_id && canToggle(u.role) && (
+                          {expandedUser === u.auth_id && canViewPermissions(u.role) && (
                             <TableRow key={`${u.id}-perms`}>
                               <TableCell colSpan={7} className="bg-muted/30 px-8 py-4">
                                 <p className="text-sm font-semibold mb-3">Permissions for {u.name}</p>
-                                <PermissionToggles userId={u.auth_id} userRole={u.role || ""} />
+                                <PermissionToggles userId={u.auth_id} userRole={u.role || ""} readOnly={!canManagePermissions} />
                               </TableCell>
                             </TableRow>
                           )}
