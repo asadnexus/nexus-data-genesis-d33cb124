@@ -31,18 +31,15 @@ function resolvePermissions(
   role: string | null,
   dbPerms: UserPermissions | null
 ): Record<PermissionKey, boolean> {
-  if (role === "main_admin" || role === "sub_admin") return { ...ALL_TRUE };
+  if (role === "main_admin") return { ...ALL_TRUE };
 
-  if (role === "moderator") {
+  if (role === "sub_admin" || role === "moderator") {
     if (!dbPerms) {
-      return {
-        ...ALL_TRUE,
-        can_view_settings: false,
-        can_edit_products: false,
-        can_delete_orders: false,
-        can_delete_customers: false,
-      };
+      return Object.fromEntries(
+        Object.keys(ALL_TRUE).map((k) => [k, false])
+      ) as Record<PermissionKey, boolean>;
     }
+
     return {
       can_view_orders: dbPerms.can_view_orders,
       can_create_orders: dbPerms.can_create_orders,
@@ -54,7 +51,7 @@ function resolvePermissions(
       can_view_dashboard: dbPerms.can_view_dashboard,
       can_view_settings: dbPerms.can_view_settings,
       can_print_invoice: dbPerms.can_print_invoice,
-      can_restore_deleted: true,
+      can_restore_deleted: dbPerms.can_restore_deleted,
     };
   }
 

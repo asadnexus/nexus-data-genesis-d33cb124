@@ -47,6 +47,14 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Enforce invite-only roles
+    if (invite.role !== "sub_admin" && invite.role !== "moderator") {
+      return new Response(JSON.stringify({ error: "Invalid invite role" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Get auth user details
     const { data: { user: authUser }, error: userError } = await adminClient.auth.admin.getUserById(auth_user_id);
     if (userError || !authUser) {

@@ -124,10 +124,10 @@ export default function UsersManagement() {
     }
   };
 
-  const canToggle = (targetRole?: string) => {
-    if (targetRole === "moderator") return myRole === "main_admin" || myRole === "sub_admin";
-    if (targetRole === "sub_admin") return myRole === "main_admin";
-    return false;
+  const canManagePermissions = myRole === "main_admin";
+
+  const canViewPermissions = (targetRole?: string) => {
+    return targetRole === "sub_admin" || targetRole === "moderator";
   };
 
   const toggleExpand = (authId: string) => {
@@ -201,8 +201,14 @@ export default function UsersManagement() {
                         <>
                           <TableRow key={u.id}>
                             <TableCell>
-                              {canToggle(u.role) && (
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleExpand(u.auth_id)}>
+                              {canViewPermissions(u.role) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => toggleExpand(u.auth_id)}
+                                  disabled={!canManagePermissions}
+                                >
                                   {expandedUser === u.auth_id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                 </Button>
                               )}
@@ -223,11 +229,11 @@ export default function UsersManagement() {
                               )}
                             </TableCell>
                           </TableRow>
-                          {expandedUser === u.auth_id && canToggle(u.role) && (
+                          {expandedUser === u.auth_id && canViewPermissions(u.role) && (
                             <TableRow key={`${u.id}-perms`}>
                               <TableCell colSpan={7} className="bg-muted/30 px-8 py-4">
                                 <p className="text-sm font-semibold mb-3">Permissions for {u.name}</p>
-                                <PermissionToggles userId={u.auth_id} userRole={u.role || ""} />
+                                <PermissionToggles userId={u.auth_id} userRole={u.role || ""} readOnly={!canManagePermissions} />
                               </TableCell>
                             </TableRow>
                           )}

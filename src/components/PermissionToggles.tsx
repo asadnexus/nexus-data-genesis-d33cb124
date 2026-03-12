@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 interface PermissionTogglesProps {
   userId: string;
   userRole: string;
+  readOnly?: boolean;
 }
 
 interface PermissionItem {
@@ -28,22 +29,20 @@ const PERMISSION_ITEMS: PermissionItem[] = [
   { key: "can_restore_deleted", label: "Restore deleted", group: "General" },
 ];
 
-function getToggleableKeys(role: string): PermissionKey[] {
-  if (role === "moderator") {
-    return PERMISSION_ITEMS
-      .filter((p) => p.key !== "can_restore_deleted")
-      .map((p) => p.key);
+function getVisibleKeys(role: string): PermissionKey[] {
+  if (role === "sub_admin" || role === "moderator") {
+    return PERMISSION_ITEMS.map((p) => p.key);
   }
   return [];
 }
 
-export function PermissionToggles({ userId, userRole }: PermissionTogglesProps) {
+export function PermissionToggles({ userId, userRole, readOnly = false }: PermissionTogglesProps) {
   const { data: perms, isLoading } = useUserPermissions(userId);
   const updateMutation = useUpdatePermission();
   const { toast } = useToast();
-  const toggleableKeys = getToggleableKeys(userRole);
+  const visibleKeys = getVisibleKeys(userRole);
 
-  if (toggleableKeys.length === 0) return null;
+  if (visibleKeys.length === 0) return null;
   if (isLoading) {
     return <div className="py-2 text-sm text-muted-foreground">Loading permissions...</div>;
   }
@@ -51,9 +50,11 @@ export function PermissionToggles({ userId, userRole }: PermissionTogglesProps) 
     return <div className="py-2 text-sm text-muted-foreground">No permissions record found</div>;
   }
 
-  const items = PERMISSION_ITEMS.filter((p) => toggleableKeys.includes(p.key));
+  const items = PERMISSION_ITEMS.filter((p) => visibleKeys.includes(p.key));
 
   const handleToggle = (key: PermissionKey, value: boolean) => {
+    if (readOnly) return;
+
     updateMutation.mutate(
       { userId, key, value },
       {
@@ -80,7 +81,7 @@ export function PermissionToggles({ userId, userRole }: PermissionTogglesProps) 
                 <Switch
                   checked={perms[item.key] as boolean}
                   onCheckedChange={(v) => handleToggle(item.key, v)}
-                  disabled={updateMutation.isPending}
+                  disabled={readOnly || updateMutation.isPending}
                 />
               </div>
             ))}
