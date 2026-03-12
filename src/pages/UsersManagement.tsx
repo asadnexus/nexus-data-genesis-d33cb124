@@ -124,10 +124,10 @@ export default function UsersManagement() {
     }
   };
 
-  const canToggle = (targetRole?: string) => {
-    if (targetRole === "moderator") return myRole === "main_admin" || myRole === "sub_admin";
-    if (targetRole === "sub_admin") return myRole === "main_admin";
-    return false;
+  const canManagePermissions = myRole === "main_admin";
+
+  const canViewPermissions = (targetRole?: string) => {
+    return targetRole === "sub_admin" || targetRole === "moderator";
   };
 
   const toggleExpand = (authId: string) => {
