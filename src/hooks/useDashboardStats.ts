@@ -1,6 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+interface RecentOrderRow {
+  invoice_code: string;
+  customer_name: string;
+  customer_phone: string;
+  cod: number | null;
+  status: string | null;
+}
+
 interface DashboardStats {
   totalProducts: number;
   totalCustomers: number;
@@ -10,6 +18,7 @@ interface DashboardStats {
   totalDue: number;
   totalAdvance: number;
   totalCOD: number;
+  totalDelivered: number;
   recentOrders: {
     date: string;
     orders: number;
@@ -19,6 +28,7 @@ interface DashboardStats {
     status: string;
     count: number;
   }[];
+  recentOrderRows: RecentOrderRow[];
 }
 
 export function useDashboardStats() {
