@@ -54,16 +54,21 @@ export function useDashboardStats() {
       const totalDue = orders.reduce((sum, o) => sum + (Number(o.total_due) || 0), 0);
       const totalAdvance = orders.reduce((sum, o) => sum + (Number(o.advance) || 0), 0);
       const totalCOD = orders.reduce((sum, o) => sum + (Number(o.cod) || 0), 0);
+      const totalDelivered = orders.filter(o => o.status === "Delivered").length;
+
+      // Recent order rows (last 5)
+      const recentOrderRows: RecentOrderRow[] = orders
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, 5)
+        .map(o => ({
+          invoice_code: (o as any).invoice_code || "",
+          customer_name: (o as any).customer_name || "",
+          customer_phone: (o as any).customer_phone || "",
+          cod: o.cod,
+          status: o.status,
+        }));
 
       // Group orders by date (last 7 days)
-      const last7Days: { date: string; orders: number; sales: number }[] = [];
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split("T")[0];
-        const dayOrders = orders.filter(o => o.created_at.startsWith(dateStr));
-        last7Days.push({
-          date: date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
           orders: dayOrders.length,
           sales: dayOrders.reduce((sum, o) => sum + (Number(o.order_value) || 0), 0),
         });
