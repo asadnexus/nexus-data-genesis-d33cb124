@@ -7,7 +7,7 @@ import {
 } from "recharts";
 import {
   LayoutDashboard, ShoppingCart, Package, Users, FileText, Truck, UserCog, Settings,
-  Globe, ArrowLeftRight, Archive, BarChart3, Lock, Bell,
+  Globe, ArrowLeftRight, Archive, BarChart3, Lock, Bell, Eye,
 } from "lucide-react";
 import nexusLogo from "@/assets/nexus-logo.jpg";
 
@@ -19,10 +19,9 @@ function useCountUp(target: number, duration = 1200) {
     if (target === prev.current) return;
     prev.current = target;
     const start = performance.now();
-    const from = 0;
     const tick = (now: number) => {
       const t = Math.min((now - start) / duration, 1);
-      setVal(Math.round(from + (target - from) * t));
+      setVal(Math.round(target * t));
       if (t < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -33,27 +32,24 @@ function useCountUp(target: number, duration = 1200) {
 /* ───── nav links ───── */
 const topLinks = [
   { label: "Home", to: "/dashboard" },
-  { label: "Orders", to: "/orders" },
+  { label: "Finances", to: "/orders" },
   { label: "Products", to: "/products" },
-  { label: "Admin Panel", to: "/settings" },
+  { label: "Orders", to: "/orders" },
+  { label: "Admin panel", to: "/settings" },
 ];
 
 const sideItems = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
-  { label: "Orders", icon: ShoppingCart, to: "/orders" },
-  { label: "Products", icon: Package, to: "/products" },
+  { label: "Transactions", icon: ArrowLeftRight, to: "/orders" },
+  { label: "Inventory", icon: Archive, to: "/products" },
+  { label: "Suppliers", icon: Truck, to: "/settings" },
   { label: "Customers", icon: Users, to: "/customers" },
-  { label: "Invoice", icon: FileText, to: "/invoice-settings" },
-  { label: "Courier Management", icon: Truck, to: "/settings" },
-  { label: "Users", icon: UserCog, to: "/users" },
+  { label: "Payments", icon: FileText, to: "/invoice-settings" },
+  { label: "Expenses", icon: ShoppingCart, to: "/settings" },
+  { label: "Analytics", icon: BarChart3, to: "/settings" },
+  { label: "Team", icon: UserCog, to: "/users" },
+  { label: "Management", icon: Globe, to: "/settings" },
   { label: "Settings", icon: Settings, to: "/settings" },
-];
-
-const lockedItems = [
-  { label: "Website Management", icon: Globe },
-  { label: "Transactions", icon: ArrowLeftRight },
-  { label: "Inventory", icon: Archive },
-  { label: "Analytics", icon: BarChart3 },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -80,7 +76,6 @@ export default function Dashboard() {
   const totalOrders = useCountUp(stats?.totalOrders ?? 0);
   const totalCOD = useCountUp(stats?.totalCOD ?? 0);
   const totalDue = useCountUp(stats?.totalDue ?? 0);
-  const totalDelivered = useCountUp(stats?.totalDelivered ?? 0);
 
   const ordersByStatus = stats?.ordersByStatus ?? [];
   const totalForPercent = ordersByStatus.reduce((s, e) => s + e.count, 0) || 1;
@@ -100,7 +95,7 @@ export default function Dashboard() {
             const active = location.pathname === l.to;
             return (
               <Link
-                key={l.to}
+                key={l.label}
                 to={l.to}
                 className="px-5 py-2 rounded-full text-sm font-medium transition-all"
                 style={
@@ -135,12 +130,12 @@ export default function Dashboard() {
           style={{ width: 210, background: "#0d1b2e", borderRight: "1px solid rgba(99,220,255,0.1)" }}
         >
           {/* Logo */}
-          <div className="flex flex-col items-center pt-5 pb-3">
-            <img src={nexusLogo} alt="Nexus AI" className="w-16 h-16 object-contain rounded-lg" />
-            <span className="text-white/90 text-sm font-semibold mt-2">Nexus AI™</span>
+          <div className="flex flex-col items-center pt-4 pb-2">
+            <img src={nexusLogo} alt="Nexus AI" className="w-24 h-24 object-contain" />
+            <span className="text-white/90 text-sm font-semibold mt-1">Nexus AI™</span>
           </div>
 
-          {/* Active items */}
+          {/* Nav items */}
           <nav className="flex-1 px-3 space-y-0.5">
             {sideItems.map((item) => {
               const active = location.pathname === item.to;
@@ -160,21 +155,6 @@ export default function Dashboard() {
                 </Link>
               );
             })}
-
-            <div className="pt-2 mt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-              {lockedItems.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm cursor-not-allowed"
-                  style={{ color: "rgba(255,255,255,0.25)" }}
-                  title="Paid plan"
-                >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
-                  <Lock className="w-3 h-3 ml-auto" />
-                </div>
-              ))}
-            </div>
           </nav>
 
           {/* User info bottom */}
@@ -188,34 +168,33 @@ export default function Dashboard() {
 
         {/* ─── MAIN CONTENT ─── */}
         <main className="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
-          {/* Row 1: KPI cards */}
-          <div className="grid grid-cols-4 gap-3">
-            {[
-              { label: "Total Sales Orders", value: totalOrders.toLocaleString(), accent: "#3b82f6" },
-              { label: "Confirmed Gross Revenue", value: fmt(totalCOD), accent: "#00B074" },
-              { label: "Outstanding Receivables", value: fmt(totalDue), accent: "#f59e0b" },
-              { label: "COD Cash Received", value: fmt(stats?.totalCOD ?? 0), accent: "#8b5cf6" },
-            ].map((c) => (
-              <div
-                key={c.label}
-                className="rounded-xl px-4 py-3 relative overflow-hidden"
-                style={{
-                  background: "#111d30",
-                  border: "1px solid rgba(99,220,255,0.1)",
-                }}
-              >
-                <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: c.accent }} />
-                <p className="text-xs text-white/50 mb-1">{c.label}</p>
-                <p className="text-xl font-bold text-white">{isLoading ? "—" : c.value}</p>
-              </div>
-            ))}
-          </div>
+          {/* Row 1: KPI cards — 2x2 grid left, chart right */}
+          <div className="flex gap-3" style={{ minHeight: 0 }}>
+            {/* Left: 2x2 KPI grid */}
+            <div className="grid grid-cols-2 gap-3" style={{ flex: "0 0 55%" }}>
+              {[
+                { label: "Total Sales Orders", value: isLoading ? "—" : totalOrders.toLocaleString() },
+                { label: "Confirmed Gross Revenue", value: isLoading ? "—" : fmt(totalCOD) },
+                { label: "Outstanding Receivables", value: isLoading ? "—" : fmt(totalDue) },
+                { label: "COD Cash Received", value: isLoading ? "—" : fmt(stats?.totalCOD ?? 0) },
+              ].map((c) => (
+                <div
+                  key={c.label}
+                  className="rounded-xl px-4 py-3"
+                  style={{
+                    background: "#111d30",
+                    border: "1px solid rgba(99,220,255,0.1)",
+                  }}
+                >
+                  <p className="text-xs text-white/50 mb-1">{c.label}</p>
+                  <p className="text-xl font-bold text-white">{c.value}</p>
+                </div>
+              ))}
+            </div>
 
-          {/* Row 2: Chart + Status */}
-          <div className="flex gap-3 flex-1 min-h-0">
-            {/* Sales chart */}
+            {/* Right: Sales Performance chart */}
             <div
-              className="flex-[3] rounded-xl p-4 flex flex-col"
+              className="flex-1 rounded-xl p-4 flex flex-col"
               style={{ background: "#111d30", border: "1px solid rgba(99,220,255,0.1)" }}
             >
               <div className="flex items-center justify-between mb-2">
@@ -237,22 +216,80 @@ export default function Dashboard() {
                     <CartesianGrid stroke="rgba(255,255,255,0.04)" />
                     <XAxis dataKey="date" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{ background: "#1a2a40", border: "1px solid rgba(99,220,255,0.2)", borderRadius: 8, color: "#fff" }}
-                    />
+                    <Tooltip contentStyle={{ background: "#1a2a40", border: "1px solid rgba(99,220,255,0.2)", borderRadius: 8, color: "#fff" }} />
                     <Area type="monotone" dataKey="sales" stroke="#f97316" strokeWidth={2} fill="url(#salesGrad)" dot={{ r: 3, fill: "#f97316" }} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
+          </div>
 
-            {/* Status bars + balance */}
+          {/* Row 2: Recent Orders table left, Status Overview right */}
+          <div className="flex gap-3 flex-1 min-h-0">
+            {/* Left: Recent Orders */}
             <div
-              className="flex-[2] rounded-xl p-4 flex flex-col gap-3"
+              className="rounded-xl p-4 flex flex-col"
+              style={{ flex: "0 0 55%", background: "#111d30", border: "1px solid rgba(99,220,255,0.1)" }}
+            >
+              <p className="text-sm font-semibold text-white mb-2">Recent Orders</p>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-white/40 border-b border-white/5">
+                    <th className="text-left py-1.5 font-medium">Order id</th>
+                    <th className="text-left py-1.5 font-medium">Name</th>
+                    <th className="text-left py-1.5 font-medium">Number</th>
+                    <th className="text-left py-1.5 font-medium">Status</th>
+                    <th className="text-center py-1.5 font-medium">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(stats?.recentOrderRows ?? []).length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-4 text-white/30">No orders yet</td>
+                    </tr>
+                  ) : (
+                    stats!.recentOrderRows.slice(0, 4).map((o, i) => {
+                      const badge = STATUS_BADGE[o.status ?? "Pending"] ?? STATUS_BADGE.Pending;
+                      const phone = o.customer_phone?.startsWith("+880")
+                        ? o.customer_phone
+                        : `+880 ${o.customer_phone?.replace(/^0/, "").slice(0, 2)}...`;
+                      return (
+                        <tr key={i} className="border-b border-white/5">
+                          <td className="py-1.5 text-cyan-400">#{o.invoice_code}</td>
+                          <td className="py-1.5 text-white/80">{o.customer_name}</td>
+                          <td className="py-1.5 text-white/60">{phone}</td>
+                          <td className="py-1.5">
+                            <span
+                              className="px-2 py-0.5 rounded-full text-[10px] font-medium"
+                              style={{ background: badge.bg, color: badge.text }}
+                            >
+                              {o.status ?? "Pending"}
+                            </span>
+                          </td>
+                          <td className="py-1.5 text-center">
+                            <Link
+                              to="/orders"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
+                              style={{ background: "rgba(0,176,116,0.15)", color: "#00B074", border: "1px solid rgba(0,176,116,0.3)" }}
+                            >
+                              View <Eye className="w-3 h-3" />
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Right: Order Status Overview */}
+            <div
+              className="flex-1 rounded-xl p-4 flex flex-col"
               style={{ background: "#111d30", border: "1px solid rgba(99,220,255,0.1)" }}
             >
-              <p className="text-sm font-semibold text-white">Order Status Overview</p>
-              <div className="space-y-3 flex-1">
+              <p className="text-sm font-semibold text-white mb-3">Order Status Overview</p>
+              <div className="space-y-4 flex-1">
                 {["Delivered", "Pending", "Sending", "Cancelled"].map((st) => {
                   const entry = ordersByStatus.find(e => e.status === st);
                   const count = entry?.count ?? 0;
@@ -273,64 +310,7 @@ export default function Dashboard() {
                   );
                 })}
               </div>
-
-              {/* Steadfast balance box */}
-              <div
-                className="rounded-lg p-3 mt-auto"
-                style={{ background: "rgba(0,176,116,0.08)", border: "1px solid rgba(0,176,116,0.2)" }}
-              >
-                <p className="text-xs text-white/50">Steadfast Balance</p>
-                <p className="text-lg font-bold" style={{ color: "#00B074" }}>৳0.00</p>
-              </div>
             </div>
-          </div>
-
-          {/* Row 3: Recent orders table */}
-          <div
-            className="rounded-xl p-4"
-            style={{ background: "#111d30", border: "1px solid rgba(99,220,255,0.1)" }}
-          >
-            <p className="text-sm font-semibold text-white mb-2">Recent Orders</p>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-white/40 border-b border-white/5">
-                  <th className="text-left py-1.5 font-medium">Invoice</th>
-                  <th className="text-left py-1.5 font-medium">Customer</th>
-                  <th className="text-left py-1.5 font-medium">Phone</th>
-                  <th className="text-right py-1.5 font-medium">COD</th>
-                  <th className="text-center py-1.5 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(stats?.recentOrderRows ?? []).length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="text-center py-4 text-white/30">No orders yet</td>
-                  </tr>
-                ) : (
-                  stats!.recentOrderRows.map((o, i) => {
-                    const badge = STATUS_BADGE[o.status ?? "Pending"] ?? STATUS_BADGE.Pending;
-                    return (
-                      <tr key={i} className="border-b border-white/5">
-                        <td className="py-1.5 text-cyan-400">#{o.invoice_code}</td>
-                        <td className="py-1.5 text-white/80">{o.customer_name}</td>
-                        <td className="py-1.5 text-white/60">
-                          {o.customer_phone?.startsWith("+880") ? o.customer_phone : `+880${o.customer_phone?.replace(/^0/, "")}`}
-                        </td>
-                        <td className="py-1.5 text-right text-white/80">৳{(o.cod ?? 0).toLocaleString()}</td>
-                        <td className="py-1.5 text-center">
-                          <span
-                            className="px-2 py-0.5 rounded-full text-[10px] font-medium"
-                            style={{ background: badge.bg, color: badge.text }}
-                          >
-                            {o.status ?? "Pending"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
           </div>
         </main>
       </div>
