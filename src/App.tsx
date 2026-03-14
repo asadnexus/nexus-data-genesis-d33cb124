@@ -36,8 +36,8 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/products" element={<Products />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/orders" element={<Orders />} />
