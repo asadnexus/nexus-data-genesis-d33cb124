@@ -43,26 +43,26 @@ export function AppLayout() {
   });
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-nexus-background">
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[hsl(var(--sidebar-background))] border-r border-[hsl(var(--sidebar-border))] transition-transform lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-nexus-primary border-r border-nexus-border transition-transform lg:static lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-16 items-center gap-2 border-b border-[hsl(var(--sidebar-border))] px-6">
-          <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center">
-            <span className="text-sm font-bold text-secondary-foreground">N</span>
+        <div className="flex h-16 items-center gap-2 border-b border-white/10 px-6">
+          <div className="h-8 w-8 rounded-lg bg-nexus-accent flex items-center justify-center">
+            <span className="text-sm font-bold text-white">N</span>
           </div>
-          <span className="text-lg font-bold text-[hsl(var(--sidebar-foreground))]">Nexus AI</span>
+          <span className="text-lg font-bold text-white">Nexus AI</span>
           <Button
             variant="ghost"
             size="icon"
-            className="ml-auto lg:hidden text-[hsl(var(--sidebar-foreground))]"
+            className="ml-auto lg:hidden text-white"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-5 w-5" />
@@ -79,8 +79,8 @@ export function AppLayout() {
                 cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))]"
-                    : "text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]"
+                    ? "bg-nexus-accent/20 text-nexus-accent-light"
+                    : "text-white/60 hover:bg-nexus-primary-light hover:text-white"
                 )
               }
             >
@@ -90,16 +90,16 @@ export function AppLayout() {
           ))}
         </nav>
 
-        <div className="border-t border-[hsl(var(--sidebar-border))] p-4">
+        <div className="border-t border-white/10 p-4">
           <div className="mb-3 px-3">
-            <p className="text-sm font-medium text-[hsl(var(--sidebar-foreground))]">{profile?.name}</p>
-            <p className="text-xs text-[hsl(var(--sidebar-foreground)/.6)]">
+            <p className="text-sm font-medium text-white">{profile?.name}</p>
+            <p className="text-xs text-white/50">
               {profile?.user_code} · {role?.replace("_", " ")}
             </p>
           </div>
           <Button
             variant="ghost"
-            className="w-full justify-start gap-3 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+            className="w-full justify-start gap-3 text-white/60 hover:bg-nexus-primary-light hover:text-white"
             onClick={handleSignOut}
           >
             <LogOut className="h-4 w-4" />
@@ -109,7 +109,7 @@ export function AppLayout() {
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center gap-4 border-b border-border bg-background px-6 lg:px-8">
+        <header className="flex h-16 items-center gap-4 border-b border-nexus-border bg-nexus-card px-6 lg:px-8">
           <Button
             variant="ghost"
             size="icon"
@@ -119,7 +119,7 @@ export function AppLayout() {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex-1" />
-          <span className="text-sm text-muted-foreground">{profile?.email}</span>
+          <span className="text-sm text-nexus-text-secondary">{profile?.email}</span>
         </header>
 
         <main className="flex-1 p-6 lg:p-8">
