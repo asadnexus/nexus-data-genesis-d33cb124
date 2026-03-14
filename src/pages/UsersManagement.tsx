@@ -150,32 +150,30 @@ export default function UsersManagement() {
   };
 
   return (
-    <div>
+    <div className="max-w-[1920px] mx-auto">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Users</h1>
-          <p className="text-muted-foreground">Manage team members and permissions</p>
+          <h1 className="text-2xl font-bold text-nexus-text-primary">Users</h1>
+          <p className="text-nexus-text-secondary">Manage team members and permissions</p>
         </div>
-        <Button onClick={() => { setGeneratedLink(null); setInviteRole("sub_admin"); setDialogOpen(true); }} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+        <Button onClick={() => { setGeneratedLink(null); setInviteRole("sub_admin"); setDialogOpen(true); }} className="bg-nexus-accent text-white shadow-lg shadow-nexus-accent/25 hover:bg-nexus-accent/90">
           <Plus className="mr-2 h-4 w-4" /> Generate Invite Link
         </Button>
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="users">Team Members</TabsTrigger>
-          <TabsTrigger value="invitations">Invitation History</TabsTrigger>
+        <TabsList className="bg-nexus-background border border-nexus-border">
+          <TabsTrigger value="users" className="data-[state=active]:bg-nexus-accent data-[state=active]:text-white">Team Members</TabsTrigger>
+          <TabsTrigger value="invitations" className="data-[state=active]:bg-nexus-accent data-[state=active]:text-white">Invitation History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
-          <Card className="glass-card">
-            <CardHeader className="pb-4">
-              <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-background/50 border-border text-card-foreground" />
+          <div className="bg-nexus-card rounded-2xl border border-nexus-border hover:shadow-lg transition-shadow">
+            <div className="p-5 sm:p-6">
+              <div className="relative max-w-sm mb-4">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-nexus-text-secondary" />
+                <Input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-nexus-background border-nexus-border text-nexus-text-primary focus:ring-2 focus:ring-nexus-accent" />
               </div>
-            </CardHeader>
-            <CardContent>
               {isLoading ? (
                 <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-secondary border-t-transparent" /></div>
               ) : filtered.length === 0 ? (
