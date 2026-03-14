@@ -150,89 +150,78 @@ export default function UsersManagement() {
   };
 
   return (
-    <div>
+    <div className="max-w-[1920px] mx-auto">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Users</h1>
-          <p className="text-muted-foreground">Manage team members and permissions</p>
+          <h1 className="text-2xl font-bold text-nexus-text-primary">Users</h1>
+          <p className="text-nexus-text-secondary">Manage team members and permissions</p>
         </div>
-        <Button onClick={() => { setGeneratedLink(null); setInviteRole("sub_admin"); setDialogOpen(true); }} className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+        <Button onClick={() => { setGeneratedLink(null); setInviteRole("sub_admin"); setDialogOpen(true); }} className="bg-nexus-accent text-white shadow-lg shadow-nexus-accent/25 hover:bg-nexus-accent/90">
           <Plus className="mr-2 h-4 w-4" /> Generate Invite Link
         </Button>
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="users">Team Members</TabsTrigger>
-          <TabsTrigger value="invitations">Invitation History</TabsTrigger>
+        <TabsList className="bg-nexus-background border border-nexus-border">
+          <TabsTrigger value="users" className="data-[state=active]:bg-nexus-accent data-[state=active]:text-white">Team Members</TabsTrigger>
+          <TabsTrigger value="invitations" className="data-[state=active]:bg-nexus-accent data-[state=active]:text-white">Invitation History</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
-          <Card className="glass-card">
-            <CardHeader className="pb-4">
-              <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-background/50 border-border text-card-foreground" />
+          <div className="bg-nexus-card rounded-2xl border border-nexus-border hover:shadow-lg transition-shadow">
+            <div className="p-5 sm:p-6">
+              <div className="relative max-w-sm mb-4">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-nexus-text-secondary" />
+                <Input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-nexus-background border-nexus-border text-nexus-text-primary focus:ring-2 focus:ring-nexus-accent" />
               </div>
-            </CardHeader>
-            <CardContent>
               {isLoading ? (
-                <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-secondary border-t-transparent" /></div>
+                <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-nexus-accent border-t-transparent" /></div>
               ) : filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <div className="flex flex-col items-center justify-center py-12 text-nexus-text-secondary">
                   <UserCog className="mb-4 h-12 w-12" /><p>No users found</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-8"></TableHead>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Active</TableHead>
+                      <TableRow className="border-nexus-border">
+                        <TableHead className="bg-nexus-background text-xs uppercase text-nexus-text-secondary font-semibold w-8"></TableHead>
+                        <TableHead className="bg-nexus-background text-xs uppercase text-nexus-text-secondary font-semibold">Code</TableHead>
+                        <TableHead className="bg-nexus-background text-xs uppercase text-nexus-text-secondary font-semibold">Name</TableHead>
+                        <TableHead className="bg-nexus-background text-xs uppercase text-nexus-text-secondary font-semibold">Email</TableHead>
+                        <TableHead className="bg-nexus-background text-xs uppercase text-nexus-text-secondary font-semibold">Role</TableHead>
+                        <TableHead className="bg-nexus-background text-xs uppercase text-nexus-text-secondary font-semibold">Status</TableHead>
+                        <TableHead className="bg-nexus-background text-xs uppercase text-nexus-text-secondary font-semibold text-right">Active</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filtered.map((u) => (
                         <>
-                          <TableRow key={u.id}>
+                          <TableRow key={u.id} className="border-nexus-border hover:bg-nexus-background/50">
                             <TableCell>
                               {canViewPermissions(u.role) && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => toggleExpand(u.auth_id)}
-                                  disabled={!canManagePermissions}
-                                >
+                                <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-nexus-background" onClick={() => toggleExpand(u.auth_id)} disabled={!canManagePermissions}>
                                   {expandedUser === u.auth_id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                 </Button>
                               )}
                             </TableCell>
-                            <TableCell className="font-mono text-sm">{u.user_code}</TableCell>
-                            <TableCell className="font-medium">{u.name}</TableCell>
-                            <TableCell>{u.email}</TableCell>
+                            <TableCell className="font-mono text-sm text-nexus-text-primary">{u.user_code}</TableCell>
+                            <TableCell className="font-medium text-nexus-text-primary">{u.name}</TableCell>
+                            <TableCell className="text-nexus-text-primary">{u.email}</TableCell>
                             <TableCell><Badge className={roleBadgeClass(u.role)}>{roleLabel(u.role)}</Badge></TableCell>
                             <TableCell>
-                              {u.is_active ? <Badge className="bg-success text-success-foreground">Active</Badge> : <Badge variant="destructive">Inactive</Badge>}
+                              {u.is_active ? <Badge className="bg-nexus-success/10 text-nexus-success border border-nexus-success/20">Active</Badge> : <Badge className="bg-nexus-danger/10 text-nexus-danger border border-nexus-danger/20">Inactive</Badge>}
                             </TableCell>
                             <TableCell className="text-right">
                               {u.role !== "main_admin" && (
-                                <Switch
-                                  checked={u.is_active}
-                                  onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: u.id, is_active: checked, user_name: u.name })}
-                                />
+                                <Switch checked={u.is_active} onCheckedChange={(checked) => toggleActiveMutation.mutate({ id: u.id, is_active: checked, user_name: u.name })} />
                               )}
                             </TableCell>
                           </TableRow>
                           {expandedUser === u.auth_id && canViewPermissions(u.role) && (
-                            <TableRow key={`${u.id}-perms`}>
-                              <TableCell colSpan={7} className="bg-muted/30 px-8 py-4">
-                                <p className="text-sm font-semibold mb-3">Permissions for {u.name}</p>
+                            <TableRow key={`${u.id}-perms`} className="border-nexus-border">
+                              <TableCell colSpan={7} className="bg-nexus-background/50 px-8 py-4">
+                                <p className="text-sm font-semibold mb-3 text-nexus-text-primary">Permissions for {u.name}</p>
                                 <PermissionToggles userId={u.auth_id} userRole={u.role || ""} readOnly={!canManagePermissions} />
                               </TableCell>
                             </TableRow>
@@ -243,32 +232,30 @@ export default function UsersManagement() {
                   </Table>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="invitations">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="text-lg">Invitation History</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-nexus-card rounded-2xl border border-nexus-border hover:shadow-lg transition-shadow">
+            <div className="p-5 sm:p-6">
+              <h2 className="text-lg font-semibold text-nexus-text-primary mb-4">Invitation History</h2>
               {invitationsLoading ? (
-                <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-secondary border-t-transparent" /></div>
+                <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-nexus-accent border-t-transparent" /></div>
               ) : invitations.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <div className="flex flex-col items-center justify-center py-12 text-nexus-text-secondary">
                   <LinkIcon className="mb-4 h-12 w-12" /><p>No invitations generated yet</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead>Expires</TableHead>
-                        <TableHead>Invite Link</TableHead>
+                      <TableRow className="border-nexus-border">
+                        <TableHead className="bg-nexus-background text-xs uppercase text-nexus-text-secondary font-semibold">Role</TableHead>
+                        <TableHead className="bg-nexus-background text-xs uppercase text-nexus-text-secondary font-semibold">Status</TableHead>
+                        <TableHead className="bg-nexus-background text-xs uppercase text-nexus-text-secondary font-semibold">Created</TableHead>
+                        <TableHead className="bg-nexus-background text-xs uppercase text-nexus-text-secondary font-semibold">Expires</TableHead>
+                        <TableHead className="bg-nexus-background text-xs uppercase text-nexus-text-secondary font-semibold">Invite Link</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -276,18 +263,18 @@ export default function UsersManagement() {
                         const status = getInviteStatus(inv);
                         const link = `${window.location.origin}/signup?invite=${inv.token}`;
                         return (
-                          <TableRow key={inv.id}>
+                          <TableRow key={inv.id} className="border-nexus-border hover:bg-nexus-background/50">
                             <TableCell><Badge className={roleBadgeClass(inv.role)}>{roleLabel(inv.role)}</Badge></TableCell>
                             <TableCell>{inviteStatusBadge(status)}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{format(new Date(inv.created_at), "dd MMM yyyy, hh:mm a")}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{format(new Date(inv.expires_at), "dd MMM yyyy, hh:mm a")}</TableCell>
+                            <TableCell className="text-sm text-nexus-text-secondary">{format(new Date(inv.created_at), "dd MMM yyyy, hh:mm a")}</TableCell>
+                            <TableCell className="text-sm text-nexus-text-secondary">{format(new Date(inv.expires_at), "dd MMM yyyy, hh:mm a")}</TableCell>
                             <TableCell>
                               {status === "pending" ? (
-                                <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(link); toast({ title: "Link copied" }); }}>
+                                <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(link); toast({ title: "Link copied" }); }} className="hover:bg-nexus-background">
                                   <Copy className="mr-1 h-3 w-3" /> Copy
                                 </Button>
                               ) : (
-                                <span className="text-xs text-muted-foreground">—</span>
+                                <span className="text-xs text-nexus-text-secondary">—</span>
                               )}
                             </TableCell>
                           </TableRow>
@@ -297,45 +284,45 @@ export default function UsersManagement() {
                   </Table>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-background border-border">
-          <DialogHeader><DialogTitle>Generate Invite Link</DialogTitle></DialogHeader>
+        <DialogContent className="bg-nexus-card border-nexus-border">
+          <DialogHeader><DialogTitle className="text-nexus-text-primary">Generate Invite Link</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label className="text-nexus-text-primary">Role</Label>
               <Select value={inviteRole} onValueChange={(v) => { setInviteRole(v as Enums<"app_role">); setGeneratedLink(null); }}>
-                <SelectTrigger className="bg-background/50 border-border"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="bg-nexus-background border-nexus-border text-nexus-text-primary"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="sub_admin">Sub Admin</SelectItem>
                   <SelectItem value="moderator">Moderator</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">The user who signs up with this link will automatically be assigned this role.</p>
+              <p className="text-xs text-nexus-text-secondary">The user who signs up with this link will automatically be assigned this role.</p>
             </div>
 
             {generatedLink && (
               <div className="space-y-2">
-                <Label>Invite Link</Label>
+                <Label className="text-nexus-text-primary">Invite Link</Label>
                 <div className="flex gap-2">
-                  <Input value={generatedLink} readOnly className="bg-background/50 border-border text-card-foreground text-xs" />
-                  <Button type="button" variant="outline" size="icon" onClick={copyLink}>
+                  <Input value={generatedLink} readOnly className="bg-nexus-background border-nexus-border text-nexus-text-primary text-xs" />
+                  <Button type="button" variant="outline" size="icon" onClick={copyLink} className="border-nexus-border hover:bg-nexus-background">
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">This link expires in 7 days. Share it with the user to invite them.</p>
+                <p className="text-xs text-nexus-text-secondary">This link expires in 7 days. Share it with the user to invite them.</p>
               </div>
             )}
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Close</Button>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} className="border-nexus-border hover:bg-nexus-background text-nexus-text-secondary">Close</Button>
               <Button
                 type="button"
-                className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                className="bg-nexus-accent text-white shadow-lg shadow-nexus-accent/25 hover:bg-nexus-accent/90"
                 disabled={createInviteMutation.isPending}
                 onClick={handleGenerateInvite}
               >
