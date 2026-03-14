@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
-import { useEffect, useState, useRef } from "react";
+import { useAnimatedNumber } from "@/hooks/useAnimatedNumber";
 import { Link, useLocation } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, ResponsiveContainer, CartesianGrid, Tooltip,
@@ -9,25 +9,7 @@ import {
   LayoutDashboard, ShoppingCart, Package, Users, FileText, Truck, UserCog, Settings,
   Globe, ArrowLeftRight, Archive, BarChart3, Lock, Bell, Eye,
 } from "lucide-react";
-import nexusLogo from "@/assets/nexus-logo.jpg";
-
-/* ───── count-up hook ───── */
-function useCountUp(target: number, duration = 1200) {
-  const [val, setVal] = useState(0);
-  const prev = useRef(0);
-  useEffect(() => {
-    if (target === prev.current) return;
-    prev.current = target;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1);
-      setVal(Math.round(target * t));
-      if (t < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [target, duration]);
-  return val;
-}
+import nexusLogo from "@/assets/nexus-logo.png";
 
 /* ───── nav links ───── */
 const topLinks = [
@@ -38,18 +20,22 @@ const topLinks = [
   { label: "Admin panel", to: "/settings" },
 ];
 
-const sideItems = [
+const activeSideItems = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/dashboard" },
-  { label: "Transactions", icon: ArrowLeftRight, to: "/orders" },
-  { label: "Inventory", icon: Archive, to: "/products" },
-  { label: "Suppliers", icon: Truck, to: "/settings" },
+  { label: "Orders", icon: ShoppingCart, to: "/orders" },
+  { label: "Products", icon: Package, to: "/products" },
   { label: "Customers", icon: Users, to: "/customers" },
-  { label: "Payments", icon: FileText, to: "/invoice-settings" },
-  { label: "Expenses", icon: ShoppingCart, to: "/settings" },
-  { label: "Analytics", icon: BarChart3, to: "/settings" },
-  { label: "Team", icon: UserCog, to: "/users" },
-  { label: "Management", icon: Globe, to: "/settings" },
+  { label: "Invoice", icon: FileText, to: "/invoice-settings" },
+  { label: "Courier\nManagement", icon: Truck, to: "/settings" },
+  { label: "Users", icon: UserCog, to: "/users" },
   { label: "Settings", icon: Settings, to: "/settings" },
+];
+
+const lockedSideItems = [
+  { label: "Website\nManagement", icon: Globe },
+  { label: "Transactions", icon: ArrowLeftRight },
+  { label: "Inventory", icon: Archive },
+  { label: "Analytics", icon: BarChart3 },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -73,9 +59,9 @@ export default function Dashboard() {
   const { data: stats, isLoading } = useDashboardStats();
   const location = useLocation();
 
-  const totalOrders = useCountUp(stats?.totalOrders ?? 0);
-  const totalCOD = useCountUp(stats?.totalCOD ?? 0);
-  const totalDue = useCountUp(stats?.totalDue ?? 0);
+  const totalOrders = useAnimatedNumber(stats?.totalOrders ?? 0);
+  const totalCOD = useAnimatedNumber(stats?.totalCOD ?? 0);
+  const totalDue = useAnimatedNumber(stats?.totalDue ?? 0);
 
   const ordersByStatus = stats?.ordersByStatus ?? [];
   const totalForPercent = ordersByStatus.reduce((s, e) => s + e.count, 0) || 1;
@@ -131,13 +117,13 @@ export default function Dashboard() {
         >
           {/* Logo */}
           <div className="flex flex-col items-center pt-4 pb-2">
-            <img src={nexusLogo} alt="Nexus AI" className="w-24 h-24 object-contain" />
+            <img src={nexusLogo} alt="Nexus AI" className="w-28 h-28 object-contain" />
             <span className="text-white/90 text-sm font-semibold mt-1">Nexus AI™</span>
           </div>
 
-          {/* Nav items */}
+          {/* Active nav items */}
           <nav className="flex-1 px-3 space-y-0.5">
-            {sideItems.map((item) => {
+            {activeSideItems.map((item) => {
               const active = location.pathname === item.to;
               return (
                 <Link
@@ -150,11 +136,30 @@ export default function Dashboard() {
                       : { color: "rgba(255,255,255,0.6)" }
                   }
                 >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
+                  <item.icon className="w-4 h-4 shrink-0" />
+                  <span className="whitespace-pre-line leading-tight">{item.label}</span>
                 </Link>
               );
             })}
+
+            {/* Locked items */}
+            <div className="mt-3 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              {lockedSideItems.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm cursor-not-allowed group relative"
+                  style={{ color: "rgba(255,255,255,0.25)" }}
+                  title="Paid plan"
+                >
+                  <item.icon className="w-4 h-4 shrink-0" />
+                  <span className="whitespace-pre-line leading-tight flex-1">{item.label}</span>
+                  <Lock className="w-3 h-3 shrink-0" />
+                  <span className="absolute left-full ml-2 px-2 py-1 rounded text-xs bg-black/90 text-white opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                    Paid plan
+                  </span>
+                </div>
+              ))}
+            </div>
           </nav>
 
           {/* User info bottom */}
@@ -180,7 +185,7 @@ export default function Dashboard() {
               ].map((c) => (
                 <div
                   key={c.label}
-                  className="rounded-xl px-4 py-3"
+                  className="rounded-xl px-4 py-3 animate-count-up"
                   style={{
                     background: "#111d30",
                     border: "1px solid rgba(99,220,255,0.1)",
@@ -272,7 +277,7 @@ export default function Dashboard() {
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
                               style={{ background: "rgba(0,176,116,0.15)", color: "#00B074", border: "1px solid rgba(0,176,116,0.3)" }}
                             >
-                              View <Eye className="w-3 h-3" />
+                              <Eye className="w-3 h-3" />
                             </Link>
                           </td>
                         </tr>
