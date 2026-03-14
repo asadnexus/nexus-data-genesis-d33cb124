@@ -253,12 +253,12 @@ export default function InvoiceSettings() {
   }
 
   return (
-    <div>
+    <div className="max-w-[1920px] mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-nexus-text-primary flex items-center gap-2">
           <FileText className="h-6 w-6" /> Invoice Settings
         </h1>
-        <p className="text-muted-foreground">Customize invoice appearance and colors</p>
+        <p className="text-nexus-text-secondary">Customize invoice appearance and colors</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
