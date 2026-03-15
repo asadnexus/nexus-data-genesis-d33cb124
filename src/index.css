@@ -83,6 +83,11 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Space Grotesk', sans-serif;
+    background-image: url('./assets/smoke-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 
   code, pre {
