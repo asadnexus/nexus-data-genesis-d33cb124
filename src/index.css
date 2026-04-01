@@ -97,6 +97,10 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/95 backdrop-blur-sm border border-border/50 shadow-xl;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
   }
 }
