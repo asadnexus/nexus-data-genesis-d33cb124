@@ -188,29 +188,19 @@ export default function Orders() {
     },
   });
 
-  // Customer phone lookup (create form)
+  // Phone auto-fill hook
+  const phoneAutoFill = usePhoneAutoFill();
+
+  // Trigger lookup when phone changes
   useEffect(() => {
     if (phone.length < 3) {
       setCustomerName("");
       setCustomerAddress("");
       setCustomerId(null);
+      phoneAutoFill.clearSuggestions();
       return;
     }
-    const timeout = setTimeout(async () => {
-      const { data } = await supabase
-        .from("customers")
-        .select("id, name, address")
-        .eq("phone", phone)
-        .is("deleted_at", null)
-        .limit(1)
-        .maybeSingle();
-      if (data) {
-        setCustomerName(data.name);
-        setCustomerAddress(data.address || "");
-        setCustomerId(data.id);
-      }
-    }, 400);
-    return () => clearTimeout(timeout);
+    phoneAutoFill.lookupPhone(phone);
   }, [phone]);
 
   // Calculate order value from items
