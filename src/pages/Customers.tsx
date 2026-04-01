@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyPermissions } from "@/hooks/usePermissions";
+import { usePhoneAutoFill } from "@/hooks/usePhoneAutoFill";
+import { PhoneInput } from "@/components/PhoneInput";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
