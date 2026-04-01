@@ -27,6 +27,7 @@ export default function Customers() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const phoneAutoFill = usePhoneAutoFill();
   const [search, setSearch] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
