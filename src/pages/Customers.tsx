@@ -247,7 +247,28 @@ export default function Customers() {
             </div>
             <div className="space-y-2">
               <Label>Phone</Label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="bg-background/50 border-border" />
+              <PhoneInput
+                value={form.phone}
+                onChange={(val) => {
+                  const cleaned = phoneAutoFill.onPhoneChange(val);
+                  setForm({ ...form, phone: cleaned });
+                }}
+                country={phoneAutoFill.country}
+                countries={phoneAutoFill.countries}
+                onCountryChange={phoneAutoFill.setCountry}
+                suggestions={phoneAutoFill.suggestions}
+                isSearching={phoneAutoFill.isSearching}
+                onSuggestionSelect={(c) => {
+                  setForm({
+                    name: c.name,
+                    phone: c.phone || form.phone,
+                    address: c.address || "",
+                  });
+                  phoneAutoFill.clearSuggestions();
+                }}
+                onPhoneInput={phoneAutoFill.lookupPhone}
+                className="bg-background/50 border-border"
+              />
             </div>
             <div className="space-y-2">
               <Label>Address</Label>
