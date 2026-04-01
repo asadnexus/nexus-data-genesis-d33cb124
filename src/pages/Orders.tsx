@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyPermissions } from "@/hooks/usePermissions";
+import { usePhoneAutoFill } from "@/hooks/usePhoneAutoFill";
+import { PhoneInput } from "@/components/PhoneInput";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -186,29 +188,19 @@ export default function Orders() {
     },
   });
 
-  // Customer phone lookup (create form)
+  // Phone auto-fill hook
+  const phoneAutoFill = usePhoneAutoFill();
+
+  // Trigger lookup when phone changes
   useEffect(() => {
     if (phone.length < 3) {
       setCustomerName("");
       setCustomerAddress("");
       setCustomerId(null);
+      phoneAutoFill.clearSuggestions();
       return;
     }
-    const timeout = setTimeout(async () => {
-      const { data } = await supabase
-        .from("customers")
-        .select("id, name, address")
-        .eq("phone", phone)
-        .is("deleted_at", null)
-        .limit(1)
-        .maybeSingle();
-      if (data) {
-        setCustomerName(data.name);
-        setCustomerAddress(data.address || "");
-        setCustomerId(data.id);
-      }
-    }, 400);
-    return () => clearTimeout(timeout);
+    phoneAutoFill.lookupPhone(phone);
   }, [phone]);
 
   // Calculate order value from items
@@ -678,9 +670,25 @@ export default function Orders() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Phone *</Label>
-                <Input
+                <PhoneInput
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(val) => {
+                    const cleaned = phoneAutoFill.onPhoneChange(val);
+                    setPhone(cleaned);
+                  }}
+                  country={phoneAutoFill.country}
+                  countries={phoneAutoFill.countries}
+                  onCountryChange={phoneAutoFill.setCountry}
+                  suggestions={phoneAutoFill.suggestions}
+                  isSearching={phoneAutoFill.isSearching}
+                  onSuggestionSelect={(c) => {
+                    setCustomerName(c.name);
+                    setCustomerAddress(c.address || "");
+                    setCustomerId(c.id);
+                    if (c.phone) setPhone(c.phone);
+                    phoneAutoFill.clearSuggestions();
+                  }}
+                  onPhoneInput={phoneAutoFill.lookupPhone}
                   placeholder="Customer phone"
                   required
                   className="bg-background/50 border-border"
