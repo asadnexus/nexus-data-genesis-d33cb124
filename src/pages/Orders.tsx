@@ -670,9 +670,25 @@ export default function Orders() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Phone *</Label>
-                <Input
+                <PhoneInput
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(val) => {
+                    const cleaned = phoneAutoFill.onPhoneChange(val);
+                    setPhone(cleaned);
+                  }}
+                  country={phoneAutoFill.country}
+                  countries={phoneAutoFill.countries}
+                  onCountryChange={phoneAutoFill.setCountry}
+                  suggestions={phoneAutoFill.suggestions}
+                  isSearching={phoneAutoFill.isSearching}
+                  onSuggestionSelect={(c) => {
+                    setCustomerName(c.name);
+                    setCustomerAddress(c.address || "");
+                    setCustomerId(c.id);
+                    if (c.phone) setPhone(c.phone);
+                    phoneAutoFill.clearSuggestions();
+                  }}
+                  onPhoneInput={phoneAutoFill.lookupPhone}
                   placeholder="Customer phone"
                   required
                   className="bg-background/50 border-border"
