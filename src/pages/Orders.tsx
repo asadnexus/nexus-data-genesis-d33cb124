@@ -493,7 +493,24 @@ export default function Orders() {
     }
   };
 
-  const pendingOrders = useMemo(() => orders.filter((o) => o.status === "Pending" && !o.deleted_at), [orders]);
+  const pendingOrders = useMemo(() => orders.filter((o) => (o.status === "New Order" || o.status === "Pending") && !o.deleted_at), [orders]);
+
+  // Sync status handler
+  const [syncing, setSyncing] = useState(false);
+  const handleSyncStatus = async () => {
+    setSyncing(true);
+    try {
+      const response = await supabase.functions.invoke("sync-order-status", { body: {} });
+      if (response.error) throw new Error(response.error.message);
+      const result = response.data;
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast({ title: "Sync complete", description: `${result.updated} order(s) updated` });
+    } catch (err: any) {
+      toast({ title: "Sync failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   return (
     <div>
