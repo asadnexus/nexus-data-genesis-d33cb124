@@ -81,8 +81,8 @@ export function useDashboardStats() {
       const lmSales = lastMonthOrders.reduce((s, o) => s + (Number(o.order_value) || 0), 0);
       const salesChange = lmSales > 0 ? ((tmSales - lmSales) / lmSales) * 100 : 0;
 
-      const tmDelivered = thisMonthOrders.filter(o => o.status?.toLowerCase() === "delivered").length;
-      const lmDelivered = lastMonthOrders.filter(o => o.status?.toLowerCase() === "delivered").length;
+      const tmDelivered = thisMonthOrders.filter(o => o.status === "Delivered" || o.status === "Delivered Approved").length;
+      const lmDelivered = lastMonthOrders.filter(o => o.status === "Delivered" || o.status === "Delivered Approved").length;
       const tmRate = thisMonthOrders.length > 0 ? (tmDelivered / thisMonthOrders.length) * 100 : 0;
       const lmRate = lastMonthOrders.length > 0 ? (lmDelivered / lastMonthOrders.length) * 100 : 0;
       const successChange = lmRate > 0 ? tmRate - lmRate : 0;
