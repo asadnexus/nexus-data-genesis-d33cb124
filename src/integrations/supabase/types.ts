@@ -386,7 +386,9 @@ export type Database = {
         Row: {
           advance: number | null
           cod: number | null
+          consignment_id: string | null
           courier_id: string | null
+          courier_name: string | null
           created_at: string
           created_by: string
           customer_address: string | null
@@ -407,7 +409,9 @@ export type Database = {
         Insert: {
           advance?: number | null
           cod?: number | null
+          consignment_id?: string | null
           courier_id?: string | null
+          courier_name?: string | null
           created_at?: string
           created_by: string
           customer_address?: string | null
@@ -428,7 +432,9 @@ export type Database = {
         Update: {
           advance?: number | null
           cod?: number | null
+          consignment_id?: string | null
           courier_id?: string | null
+          courier_name?: string | null
           created_at?: string
           created_by?: string
           customer_address?: string | null

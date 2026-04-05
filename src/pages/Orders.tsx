@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ShoppingCart, Trash2, Eye, Pencil, RotateCcw, Download, Printer, Share2, Link, Loader2, ChevronDown, Send, Package } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, Eye, Pencil, RotateCcw, Download, Printer, Share2, Link, Loader2, ChevronDown, Send, Package, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { GlassSearchBar } from "@/components/GlassSearchBar";
@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const ORDER_STATUSES = ["Pending", "Sending · Pending", "Bulk Sent · Pending", "Confirmed", "In Review", "Dispatched", "On Hold", "Delivered", "Cancelled", "Returned"] as const;
+const ORDER_STATUSES = ["New Order", "Individual · Order", "Bulk Sent · Pending", "Confirmed", "In Review", "Dispatched", "On Hold", "Delivered", "Delivered Approved", "Cancelled", "Returned"] as const;
 
 interface OrderItem {
   product_id: string;
@@ -52,6 +52,8 @@ interface OrderRow {
   note: string | null;
   status: string | null;
   tracking_code: string | null;
+  consignment_id: string | null;
+  courier_name: string | null;
   created_at: string;
   deleted_at: string | null;
   invoice_url: string | null;
@@ -69,14 +71,15 @@ interface OrderItemRow {
 
 function statusColor(status: string | null): string {
   switch (status) {
-    case "Pending": return "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30";
-    case "Sending · Pending":
+    case "New Order": return "bg-[#8B5CF6]/20 text-[#8B5CF6] border-[#8B5CF6]/30";
+    case "Individual · Order": return "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 animate-pulse";
     case "Bulk Sent · Pending": return "bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30 animate-pulse";
     case "Confirmed": return "bg-[#3B82F6]/20 text-[#3B82F6] border-[#3B82F6]/30";
     case "In Review": return "bg-[#60A5FA]/20 text-[#60A5FA] border-[#60A5FA]/30";
     case "Dispatched": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
     case "On Hold": return "bg-[#F97316]/20 text-[#F97316] border-[#F97316]/30";
     case "Delivered": return "bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30";
+    case "Delivered Approved": return "bg-[#059669]/20 text-[#059669] border-[#059669]/30";
     case "Cancelled": return "bg-[#EF4444]/20 text-[#EF4444] border-[#EF4444]/30";
     case "Returned": return "bg-orange-500/20 text-orange-400 border-orange-500/30";
     default: return "bg-muted text-muted-foreground border-border";
@@ -256,7 +259,7 @@ export default function Orders() {
     setEditAdvance(String(order.advance ?? 0));
     setEditCod(String(order.cod ?? 0));
     setEditNote(order.note || "");
-    setEditStatus(order.status || "Pending");
+    setEditStatus(order.status || "New Order");
     setEditTrackingCode(order.tracking_code || "");
     setEditCourier(order.courier_id || "");
     setEditOpen(true);
@@ -490,7 +493,24 @@ export default function Orders() {
     }
   };
 
-  const pendingOrders = useMemo(() => orders.filter((o) => o.status === "Pending" && !o.deleted_at), [orders]);
+  const pendingOrders = useMemo(() => orders.filter((o) => (o.status === "New Order" || o.status === "Pending") && !o.deleted_at), [orders]);
+
+  // Sync status handler
+  const [syncing, setSyncing] = useState(false);
+  const handleSyncStatus = async () => {
+    setSyncing(true);
+    try {
+      const response = await supabase.functions.invoke("sync-order-status", { body: {} });
+      if (response.error) throw new Error(response.error.message);
+      const result = response.data;
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast({ title: "Sync complete", description: `${result.updated} order(s) updated` });
+    } catch (err: any) {
+      toast({ title: "Sync failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   return (
     <div>
@@ -535,7 +555,16 @@ export default function Orders() {
 
       <Card className="glass-card">
         <CardContent className="pt-6">
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end gap-2 mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncStatus}
+              disabled={syncing}
+            >
+              {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Sync Status
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -596,7 +625,7 @@ export default function Orders() {
                           </Select>
                         ) : (
                           <Badge className={`${statusColor(o.status)} border`}>
-                            {o.deleted_at ? "Deleted" : o.status || "Pending"}
+                            {o.deleted_at ? "Deleted" : o.status || "New Order"}
                           </Badge>
                         )}
                       </TableCell>
@@ -605,7 +634,7 @@ export default function Orders() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          {canCreate && !o.deleted_at && o.status === "Pending" && (
+                          {canCreate && !o.deleted_at && (o.status === "New Order" || o.status === "Pending" || !o.status) && (
                             <Button
                               size="icon"
                               variant="ghost"
@@ -1047,15 +1076,27 @@ export default function Orders() {
                 <span>{viewOrder.customer_address || "—"}</span>
                 <span className="text-muted-foreground">Status</span>
                 <Badge className={`${statusColor(viewOrder.status)} border w-fit`}>
-                  {viewOrder.status || "Pending"}
+                  {viewOrder.status || "New Order"}
                 </Badge>
                 {viewOrder.tracking_code && (
                   <>
-                    <span className="text-muted-foreground">Tracking</span>
+                    <span className="text-muted-foreground">Tracking Code</span>
                     <span className="font-mono">{viewOrder.tracking_code}</span>
                   </>
                 )}
-                {viewOrder.courier_id && (
+                {viewOrder.consignment_id && (
+                  <>
+                    <span className="text-muted-foreground">Consignment ID</span>
+                    <span className="font-mono">{viewOrder.consignment_id}</span>
+                  </>
+                )}
+                {viewOrder.courier_name && (
+                  <>
+                    <span className="text-muted-foreground">Courier</span>
+                    <span>{viewOrder.courier_name}</span>
+                  </>
+                )}
+                {!viewOrder.courier_name && viewOrder.courier_id && (
                   <>
                     <span className="text-muted-foreground">Courier</span>
                     <span>{couriers.find(c => c.id === viewOrder.courier_id)?.name || "—"}</span>
