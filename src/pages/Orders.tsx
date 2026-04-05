@@ -52,6 +52,8 @@ interface OrderRow {
   note: string | null;
   status: string | null;
   tracking_code: string | null;
+  consignment_id: string | null;
+  courier_name: string | null;
   created_at: string;
   deleted_at: string | null;
   invoice_url: string | null;
