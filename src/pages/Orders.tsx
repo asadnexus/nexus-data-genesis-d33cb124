@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ShoppingCart, Trash2, Eye, Pencil, RotateCcw, Download, Printer, Share2, Link, Loader2, ChevronDown, Send, Package } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, Eye, Pencil, RotateCcw, Download, Printer, Share2, Link, Loader2, ChevronDown, Send, Package, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { GlassSearchBar } from "@/components/GlassSearchBar";
