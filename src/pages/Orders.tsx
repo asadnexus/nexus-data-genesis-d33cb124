@@ -625,7 +625,7 @@ export default function Orders() {
                           </Select>
                         ) : (
                           <Badge className={`${statusColor(o.status)} border`}>
-                            {o.deleted_at ? "Deleted" : o.status || "Pending"}
+                            {o.deleted_at ? "Deleted" : o.status || "New Order"}
                           </Badge>
                         )}
                       </TableCell>
