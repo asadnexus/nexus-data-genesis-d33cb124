@@ -555,7 +555,16 @@ export default function Orders() {
 
       <Card className="glass-card">
         <CardContent className="pt-6">
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end gap-2 mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncStatus}
+              disabled={syncing}
+            >
+              {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Sync Status
+            </Button>
             <Button
               variant="outline"
               size="sm"
