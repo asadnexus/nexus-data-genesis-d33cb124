@@ -26,7 +26,6 @@ serve(async (req) => {
 
     const body = await req.json();
     const { courier_id, orders } = body;
-    // orders: Array<{ order_id, invoice, recipient_name, recipient_phone, recipient_address, cod_amount, note }>
 
     if (!courier_id || !orders?.length) throw new Error("Missing courier_id or orders");
 
@@ -42,9 +41,10 @@ serve(async (req) => {
       ? "https://portal.packzy.com/api/v1"
       : courier.base_url;
 
-    const results: Array<{ order_id: string; success: boolean; tracking_code?: string; error?: string }> = [];
+    const isBulk = orders.length > 1;
 
-    // Process each order
+    const results: Array<{ order_id: string; success: boolean; tracking_code?: string; consignment_id?: string; error?: string }> = [];
+
     for (const order of orders) {
       try {
         const response = await fetch(`${baseUrl}/create_order`, {
@@ -68,18 +68,21 @@ serve(async (req) => {
 
         if (data.status === 200 && data.consignment) {
           const trackingCode = data.consignment.tracking_code;
-          const newStatus = orders.length > 1 ? "Bulk Sent · Pending" : "Sending · Pending";
+          const consignmentId = String(data.consignment.consignment_id || "");
+          const newStatus = isBulk ? "Bulk Sent · Pending" : "Individual · Order";
 
           await supabase
             .from("orders")
             .update({
               status: newStatus,
               tracking_code: trackingCode,
+              consignment_id: consignmentId,
               courier_id: courier_id,
+              courier_name: courier.name,
             })
             .eq("id", order.order_id);
 
-          results.push({ order_id: order.order_id, success: true, tracking_code: trackingCode });
+          results.push({ order_id: order.order_id, success: true, tracking_code: trackingCode, consignment_id: consignmentId });
         } else {
           results.push({
             order_id: order.order_id,
