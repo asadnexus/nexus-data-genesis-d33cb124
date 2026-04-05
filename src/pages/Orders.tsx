@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const ORDER_STATUSES = ["Pending", "Sending · Pending", "Bulk Sent · Pending", "Confirmed", "In Review", "Dispatched", "On Hold", "Delivered", "Cancelled", "Returned"] as const;
+const ORDER_STATUSES = ["New Order", "Individual · Order", "Bulk Sent · Pending", "Confirmed", "In Review", "Dispatched", "On Hold", "Delivered", "Delivered Approved", "Cancelled", "Returned"] as const;
 
 interface OrderItem {
   product_id: string;
