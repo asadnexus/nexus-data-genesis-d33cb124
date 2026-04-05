@@ -634,7 +634,7 @@ export default function Orders() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          {canCreate && !o.deleted_at && o.status === "Pending" && (
+                          {canCreate && !o.deleted_at && (o.status === "New Order" || o.status === "Pending" || !o.status) && (
                             <Button
                               size="icon"
                               variant="ghost"
