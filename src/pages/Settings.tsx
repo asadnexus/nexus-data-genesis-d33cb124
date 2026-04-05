@@ -51,6 +51,114 @@ function maskKey(key: string): string {
   return key.slice(0, 3) + "••••••••" + key.slice(-3);
 }
 
+const STEADFAST_SCOPES = [
+  { scope: "Create Order", endpoint: "/create_order", method: "POST" },
+  { scope: "Bulk Order", endpoint: "/create_order/bulk-order", method: "POST" },
+  { scope: "Status by CID", endpoint: "/status_by_cid/{id}", method: "GET" },
+  { scope: "Status by Invoice", endpoint: "/status_by_invoice/{invoice}", method: "GET" },
+  { scope: "Status by Tracking", endpoint: "/status_by_trackingcode/{code}", method: "GET" },
+  { scope: "Check Balance", endpoint: "/get_balance", method: "GET" },
+  { scope: "Create Return", endpoint: "/create_return_request", method: "POST" },
+  { scope: "Get Returns", endpoint: "/get_return_requests", method: "GET" },
+  { scope: "Get Payments", endpoint: "/payments", method: "GET" },
+  { scope: "Police Stations", endpoint: "/police_stations", method: "GET" },
+];
+
+function TestBalanceButton({ courier }: { courier: { api_key: string; secret_key: string } }) {
+  const [loading, setLoading] = useState(false);
+  const [balance, setBalance] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleTestBalance = async () => {
+    setLoading(true);
+    setBalance(null);
+    try {
+      const response = await fetch("https://portal.packzy.com/api/v1/get_balance", {
+        method: "GET",
+        headers: {
+          "Api-Key": courier.api_key,
+          "Secret-Key": courier.secret_key,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (data.status === 200) {
+        const bal = data.current_balance ?? data.balance ?? "N/A";
+        setBalance(`৳${bal}`);
+        toast({ title: "Balance fetched", description: `Current balance: ৳${bal}` });
+      } else {
+        toast({ title: "Failed", description: data.message || "Could not fetch balance", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3">
+      <Button size="sm" variant="outline" onClick={handleTestBalance} disabled={loading}>
+        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+        Test Balance
+      </Button>
+      {balance && <span className="text-sm font-medium text-green-400">{balance}</span>}
+    </div>
+  );
+}
+
+function ApiScopesSection() {
+  const [open, setOpen] = useState(false);
+  const [activeScopes, setActiveScopes] = useState<Record<string, boolean>>(
+    Object.fromEntries(STEADFAST_SCOPES.map((s) => [s.scope, true]))
+  );
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground text-xs gap-1 p-0 h-auto hover:text-foreground">
+          {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          API Scopes & Endpoints
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-2">
+        <div className="overflow-x-auto rounded-md border border-border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Scope</TableHead>
+                <TableHead className="text-xs">Endpoint</TableHead>
+                <TableHead className="text-xs">Method</TableHead>
+                <TableHead className="text-xs text-right">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {STEADFAST_SCOPES.map((s) => (
+                <TableRow key={s.scope}>
+                  <TableCell className="text-xs font-medium">{s.scope}</TableCell>
+                  <TableCell className="text-xs font-mono text-muted-foreground">{s.endpoint}</TableCell>
+                  <TableCell className="text-xs">
+                    <span className={cn(
+                      "px-1.5 py-0.5 rounded text-[10px] font-medium",
+                      s.method === "POST" ? "bg-blue-500/20 text-blue-400" : "bg-green-500/20 text-green-400"
+                    )}>{s.method}</span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Switch
+                      checked={activeScopes[s.scope] ?? true}
+                      onCheckedChange={(v) => setActiveScopes((prev) => ({ ...prev, [s.scope]: v }))}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 export default function Settings() {
   const { role } = useAuth();
   const { toast } = useToast();
