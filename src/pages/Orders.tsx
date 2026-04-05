@@ -1076,15 +1076,27 @@ export default function Orders() {
                 <span>{viewOrder.customer_address || "—"}</span>
                 <span className="text-muted-foreground">Status</span>
                 <Badge className={`${statusColor(viewOrder.status)} border w-fit`}>
-                  {viewOrder.status || "Pending"}
+                  {viewOrder.status || "New Order"}
                 </Badge>
                 {viewOrder.tracking_code && (
                   <>
-                    <span className="text-muted-foreground">Tracking</span>
+                    <span className="text-muted-foreground">Tracking Code</span>
                     <span className="font-mono">{viewOrder.tracking_code}</span>
                   </>
                 )}
-                {viewOrder.courier_id && (
+                {viewOrder.consignment_id && (
+                  <>
+                    <span className="text-muted-foreground">Consignment ID</span>
+                    <span className="font-mono">{viewOrder.consignment_id}</span>
+                  </>
+                )}
+                {viewOrder.courier_name && (
+                  <>
+                    <span className="text-muted-foreground">Courier</span>
+                    <span>{viewOrder.courier_name}</span>
+                  </>
+                )}
+                {!viewOrder.courier_name && viewOrder.courier_id && (
                   <>
                     <span className="text-muted-foreground">Courier</span>
                     <span>{couriers.find(c => c.id === viewOrder.courier_id)?.name || "—"}</span>
