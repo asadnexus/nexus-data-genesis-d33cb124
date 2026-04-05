@@ -458,9 +458,19 @@ export default function Settings() {
                               <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => toggleVisibility(courier.id, "secret")}>
                                 {vis.secret ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                               </Button>
-                            </div>
                           </div>
                         </div>
+
+                        {/* Test Balance Button */}
+                        {courier.name.toLowerCase().includes("steadfast") && (
+                          <TestBalanceButton courier={courier} />
+                        )}
+
+                        {/* API Scopes */}
+                        {courier.name.toLowerCase().includes("steadfast") && (
+                          <ApiScopesSection />
+                        )}
+                      </div>
                       </div>
                     );
                   })}
