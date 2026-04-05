@@ -12,7 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Eye, EyeOff, Truck, Settings as SettingsIcon, Building2, Upload, Globe, Mail, Phone, MapPin } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Truck, Settings as SettingsIcon, Building2, Upload, Globe, Mail, Phone, MapPin, Loader2, ChevronDown, ChevronRight } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Select,
   SelectContent,
