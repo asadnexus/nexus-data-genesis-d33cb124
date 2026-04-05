@@ -68,13 +68,13 @@ export function useDashboardStats() {
 
       const totalSales = all.reduce((s, o) => s + (Number(o.order_value) || 0), 0);
       const totalCOD = all.reduce((s, o) => s + (Number(o.cod) || 0), 0);
-      const deliveredCount = all.filter(o => o.status?.toLowerCase() === "delivered").length;
-      const pendingCount = all.filter(o => o.status === "Pending").length;
-      const sendingCount = all.filter(o => o.status === "Sending" || o.status === "Dispatched").length;
+      const deliveredCount = all.filter(o => o.status === "Delivered" || o.status === "Delivered Approved").length;
+      const pendingCount = all.filter(o => o.status === "New Order" || o.status === "Pending" || o.status === "Individual · Order" || o.status === "Bulk Sent · Pending").length;
+      const sendingCount = all.filter(o => o.status === "Dispatched" || o.status === "In Review").length;
       const cancelledCount = all.filter(o => o.status === "Cancelled").length;
       const successRate = all.length > 0 ? (deliveredCount / all.length) * 100 : 0;
 
-      const activeOrdersCount = all.filter(o => o.status === "Pending" || o.status === "Sending" || o.status === "Dispatched").length;
+      const activeOrdersCount = all.filter(o => ["New Order", "Pending", "Individual · Order", "Bulk Sent · Pending", "Dispatched", "In Review"].includes(o.status || "")).length;
 
       // % changes
       const tmSales = thisMonthOrders.reduce((s, o) => s + (Number(o.order_value) || 0), 0);
