@@ -259,7 +259,7 @@ export default function Orders() {
     setEditAdvance(String(order.advance ?? 0));
     setEditCod(String(order.cod ?? 0));
     setEditNote(order.note || "");
-    setEditStatus(order.status || "Pending");
+    setEditStatus(order.status || "New Order");
     setEditTrackingCode(order.tracking_code || "");
     setEditCourier(order.courier_id || "");
     setEditOpen(true);
